@@ -62,13 +62,13 @@ INSERT INTO `users` (`username`, `password`, `role`) VALUES ('admin', '\$2y\$10\
 INSERT INTO `categories` (`name`, `code`) VALUES
 ('Roupa', 'ROP'),
 ('Medicamento', 'MED'),
-('Acessórios', 'ACS'),   -- Corrigido
-('Eletrônicos', 'ELE'),  -- Corrigido
+('AcessÃ³rios', 'ACS'),   -- Corrigido
+('EletrÃ´nicos', 'ELE'),  -- Corrigido
 ('Documentos', 'DOC'),
 ('Outros', 'OUT');
 
 -- Populate Example Locations (Caracteres Corrigidos)
 INSERT INTO `locations` (`name`) VALUES
-('Recepção', 'REC'),
-('Auditório', 'AUD'),
-('Bloco A - Sala 101', 'A101');
+('Teatro Paulo Autran'),
+('AuditÃ³rio'),
+('EspaÃ§o de Brincar');
