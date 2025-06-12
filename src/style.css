@@ -1,0 +1,904 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+.container {
+    width: 80%;
+    margin: auto;
+    overflow: hidden;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/* Header and Navigation */
+header {
+    background: #007bff;
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2em;
+}
+
+header nav ul {
+    padding: 0;
+    list-style: none;
+}
+
+header nav ul li {
+    display: inline;
+    margin: 0 10px;
+}
+
+header nav a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 1.1em;
+}
+
+header nav a:hover {
+    text-decoration: underline;
+}
+
+/* Main Content Area */
+main {
+    padding: 20px 0;
+}
+
+/* Forms */
+form div {
+    margin-bottom: 15px;
+}
+
+form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+form input[type="text"],
+form input[type="password"],
+form input[type="date"],
+form select,
+form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+form textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+form button[type="submit"] {
+    display: block;
+    width: auto;
+    padding: 10px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+form button[type="submit"]:hover {
+    background: #0056b3;
+}
+
+.form-action-buttons-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-start;
+}
+.form-action-buttons-group .button-primary,
+.form-action-buttons-group .button-secondary {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+
+/* Item List on home.php */
+.item-list {
+    list-style: none;
+    padding: 0;
+}
+
+.item-list li {
+    background: #fff;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.item-list li strong {
+    color: #007bff;
+}
+
+/* Messages */
+.error-message {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border-width: 1px;
+    border-style: solid;
+}
+
+.success-message {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border-width: 1px;
+    border-style: solid;
+}
+
+.warning-message {
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    padding: 12px 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.info-message {
+    color: #004085;
+    background-color: #cce5ff;
+    border-color: #b8daff;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border-width: 1px;
+    border-style: solid;
+}
+
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 30px;
+    background: #007bff;
+    color: #fff;
+}
+
+/* Responsive Design (Basic Example) */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+    }
+
+    header nav ul li {
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    form input[type="text"],
+    form input[type="password"],
+    form input[type="date"],
+    form select,
+    form textarea {
+        font-size: 1em;
+    }
+}
+
+/* Specific container adjustments if needed */
+.login-container,
+.register-item-container,
+.home-container {
+    margin-top: 20px;
+}
+
+.login-container h2,
+.register-item-container h2,
+.home-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #007bff;
+}
+
+/* General link styling - ADDED for theme consistency */
+a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* === Admin Page Specific Styles === */
+
+/* Admin Container */
+.admin-container {
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.admin-container h2,
+.admin-container h3 {
+    color: #007bff;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.admin-container hr {
+    margin: 30px 0;
+    border: 0;
+    border-top: 1px solid #ddd;
+}
+
+/* Admin Forms */
+.admin-container form label {
+    font-weight: bold;
+}
+
+.admin-container form input[type="text"],
+.admin-container form input[type="password"],
+.admin-container form select {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.admin-container form input[type="text"]:focus,
+.admin-container form input[type="password"]:focus,
+.admin-container form select:focus {
+    border-color: #007bff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.admin-container form button[type="button"] {
+    background-color: #6c757d;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-left: 10px;
+}
+.admin-container form button[type="button"]:hover {
+    background-color: #5a6268;
+}
+
+
+/* Inline forms styling from manage_users.php */
+.form-inline {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.form-inline input[type="password"] {
+    width: auto;
+    flex-grow: 1;
+    margin-right: 5px;
+    padding: 8px;
+}
+.form-inline button {
+    margin-left: 5px;
+    padding: 8px 12px;
+}
+.sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+}
+
+
+/* Admin Tables */
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+.admin-table th,
+.admin-table td {
+    border: 1px solid #ddd;
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.admin-table th {
+    background-color: #007bff;
+    color: #fff;
+    font-weight: bold;
+}
+
+.admin-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.admin-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Edit form sections if they are styled as distinct boxes */
+#editCategorySection, #editLocationSection {
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid #007bff;
+    background-color: #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+#editCategorySection h3, #editLocationSection h3 {
+    margin-top: 0;
+    color: #007bff;
+    text-align: left;
+}
+
+/* Barcode image styling */
+.barcode-image {
+    display: block;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    max-width: 220px;
+    height: auto;
+}
+
+/* === Styles from home.php (Filters & Action Buttons) === */
+
+#itemListContainer {
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+
+.form-filters {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    border: 1px solid #ddd;
+}
+.form-filters h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #007bff;
+}
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+.filter-row > div {
+    flex: 1;
+    min-width: 200px;
+}
+.filter-row label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+.filter-row select,
+.filter-row input[type="date"],
+.filter-row input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.filter-row select:focus,
+.filter-row input[type="date"]:focus,
+.filter-row input[type="text"]:focus {
+    border-color: #007bff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.filter-buttons {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+.filter-buttons button,
+.filter-buttons a {
+    padding: 5px 10px;     /* Explicit px padding */
+    font-size: 13px;       /* Explicit px font size */
+    line-height: 1.4;      /* Explicit line-height */
+    margin: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    vertical-align: middle;
+    text-align: center;
+    box-sizing: border-box;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, transform 0.2s ease-in-out;
+}
+.button-filter {
+    background-color: #007bff;
+    color:white;
+    border: 1px solid #0069d9;
+}
+.button-filter:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    transform: scale(1.05);
+}
+.button-filter-clear {
+    background-color: #6c757d;
+    color:white;
+    border: 1px solid #5a6268;
+}
+.button-filter-clear:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+    transform: scale(1.05);
+}
+
+/* General Action Buttons */
+.button-primary,
+.button-secondary,
+.button-edit,
+.button-delete,
+.button-details { /* Combined base style for action buttons */
+    padding: 5px 10px;     /* Explicit px padding */
+    font-size: 13px;       /* Explicit px font size */
+    line-height: 1.4;      /* Explicit line-height */
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    vertical-align: middle;
+    text-align: center;
+    margin:0;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, transform 0.2s ease-in-out; /* Added transform transition */
+}
+
+.button-primary {
+    background-color: #007bff;
+    color: white;
+    border-color: #0069d9;
+}
+.button-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    transform: scale(1.05);
+}
+
+.button-secondary {
+    background-color: #6c757d;
+    color: white;
+    border-color: #5a6268;
+}
+.button-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+    transform: scale(1.05);
+}
+
+.button-edit {
+    background-color: #ffc107;
+    color: #212529;
+    border-color: #e0a800;
+}
+.button-edit:hover {
+    background-color: #e0a800;
+    border-color: #d39e00;
+    color: #212529;
+    transform: scale(1.05);
+}
+
+.button-delete {
+    background-color: #dc3545;
+    color: white;
+    border-color: #c82333;
+}
+.button-delete:hover {
+    background-color: #c82333;
+    border-color: #b01e2c;
+    color: white;
+    transform: scale(1.05);
+}
+
+.button-details {
+    background-color: #6c757d;
+    color: white;
+    border-color: #5a6268;
+}
+.button-details:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
+    transform: scale(1.05);
+}
+
+
+.button-large {
+    padding: 10px 20px;
+    font-size: 1em;
+}
+
+/* Styles for Action Bar on home.php */
+.action-bar {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.action-bar label {
+    font-weight: normal;
+    margin-bottom: 0;
+    margin-right: 5px;
+}
+.action-bar input[type="checkbox"] {
+    margin-right: 5px;
+}
+.action-bar button {
+    margin-left: 5px;
+}
+
+/* Styles for Status Display */
+.item-status {
+    display: inline-block;
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: middle;
+}
+.status-pendente { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+.status-devolvido { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.status-doado { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+/* Styles for Signature Pad (devolve_item_page.php) */
+.signature-pad-container {
+    border: 1px solid #ccc;
+    max-width: 400px;
+    margin-bottom: 10px;
+    background-color: #fff;
+}
+.signature-canvas {
+    cursor: crosshair;
+    display: block;
+    width: 100%;
+    height: 200px;
+}
+
+/* Styles for Detailed View Section (manage_devolutions.php) */
+.detailed-view-section {
+    margin-top: 30px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+.detailed-view-section h3,
+.detailed-view-section h4 {
+    color: #007bff;
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+.detailed-view-section h4 {
+    font-size: 1.15em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+}
+.detailed-view-section p {
+    margin-bottom: 10px;
+    line-height: 1.7;
+}
+.detailed-view-section strong {
+    color: #333;
+}
+.signature-image {
+    max-width: 100%;
+    width: 300px;
+    height: auto;
+    border: 1px solid #666;
+    margin-top: 10px;
+    display: block;
+    background-color: #fff;
+}
+
+/* Admin Tables Action Cell Alignment */
+/* General styling for action cells in admin tables */
+.admin-table td.actions-cell {
+    display: flex;         /* Lay out items in a row */
+    align-items: center;   /* Vertically center items in the cell */
+    gap: 8px;              /* Space between multiple buttons/forms in the cell */
+    flex-wrap: wrap;       /* Allow actions to wrap on smaller screens if needed */
+}
+
+.admin-table td.actions-cell > form { /* This rule might need adjustment if it conflicts with the flex row main axis */
+    margin: 0;
+    /* display: flex; /* This might not be needed if form is a flex item */
+    /* align-items: center; /* This might not be needed if form is a flex item */
+    /* gap: 5px; /* This might not be needed if form is a flex item */
+}
+
+
+/* Specific Style for home.php's Action Cell (.home-actions-cell) */
+.admin-table td.home-actions-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Align children (button, divs) to the start */
+    gap: 5px; /* Vertical spacing between Ver Descricao and the groups below */
+}
+
+/* Ensure action groups within home-actions-cell behave as intended */
+.home-actions-cell .action-group-inline,
+.home-actions-cell .action-group-centered {
+    width: auto; /* Allow these groups to size to their content */
+}
+
+.home-actions-cell > button.button-details-home {
+    width: auto; /* Ensure the "Ver Descricao" button itself doesn't stretch */
+}
+
+
+/* Specificity for buttons inside action cells, if needed beyond base class */
+/* This rule is now less critical as base button styles are more comprehensive */
+/* Keeping it for vertical-align and box-sizing assurance, and margin reset. */
+.admin-table td.actions-cell .button-details-home,
+.admin-table td.actions-cell .action-group-inline .button-edit,
+.admin-table td.actions-cell .action-group-inline .button-delete,
+.admin-table td.actions-cell .action-group-centered .button-secondary,
+.admin-table td.actions-cell .action-group-inline form > .button-delete {
+    box-sizing: border-box;
+    vertical-align: middle;
+    margin: 0;
+}
+
+
+.admin-table td.actions-cell .form-inline input[type="password"],
+.admin-table td.actions-cell .form-inline button {
+    padding-top: 6px;
+    padding-bottom: 6px;
+    font-size: 0.9em;
+    line-height: 1.4; /* Note: base buttons now use 1.5, this is a slight difference */
+    vertical-align: middle;
+}
+.admin-table td.actions-cell .form-inline input[type="password"] {
+     padding-left: 8px;
+     padding-right: 8px;
+}
+
+
+/* Styles for the relocated "Ver Termo" button and its container cell */
+/* .admin-table td.status-actions-cell rule removed */
+/* .button-view-term and .button-view-term:hover rules removed */
+
+
+@media print {
+    /* --- General Print Resets & Body --- */
+    body {
+        font-family: 'Times New Roman', Times, serif !important;
+        font-size: 12pt !important;
+        color: #000 !important;
+        background-color: #fff !important;
+        margin: 20pt !important;
+        padding: 0 !important;
+    }
+
+    /* --- Hide Non-Essential Page Elements --- */
+    header,
+    nav,
+    footer,
+    .filter-buttons button,
+    .filter-buttons a,
+    .action-bar,
+    .admin-table button,
+    .admin-table .button-edit,
+    .admin-table .button-delete,
+    .admin-table td.actions-cell > a.button-edit,
+    .admin-table td.actions-cell > form button,
+    .admin-table td.actions-cell .button-details-home,
+    .form-filters
+    {
+        display: none !important;
+    }
+
+    /* --- Styling for manage_devolutions.php when printing a specific term --- */
+    .container.admin-container > *:not(.detailed-view-section),
+    .container.admin-container > h2
+    {
+        display: none !important;
+    }
+
+    .detailed-view-section {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background-color: #fff !important;
+        font-size: 12pt !important;
+    }
+
+    .detailed-view-section h3,
+    .detailed-view-section h4 {
+        color: #000 !important;
+        margin-top: 1.2em;
+        margin-bottom: 0.8em;
+        padding-bottom: 0.2em;
+        border-bottom: 1px solid #ccc !important;
+        font-size: 14pt !important;
+    }
+    .detailed-view-section h3 {
+        font-size: 16pt !important;
+        text-align: center;
+    }
+     .detailed-view-section h5 {
+        color: #000 !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        font-size: 13pt !important;
+        margin-top: 1em;
+        margin-bottom: 0.5em;
+    }
+
+
+    .detailed-view-section p {
+        font-size: 12pt !important;
+        line-height: 1.35 !important;
+        margin-bottom: 0.5em;
+    }
+
+    .detailed-view-section .term-separator {
+        color: #555 !important;
+        margin-left: 8px !important;
+        margin-right: 8px !important;
+    }
+
+    .detailed-view-section .devolution-declaration p {
+        font-size: 11pt !important;
+        text-align: justify;
+    }
+
+
+    .detailed-view-section .signature-image {
+        max-width: 250px !important;
+        height: auto;
+        border: 1px solid #333 !important;
+        margin-top: 10pt;
+    }
+
+    .detailed-view-section button,
+    .detailed-view-section a.button-secondary {
+        display: none !important;
+    }
+
+    .detailed-view-section a,
+    .detailed_view-section a:visited {
+        color: #000 !important;
+        text-decoration: none !important;
+    }
+
+    .container, .admin-container {
+        box-shadow: none !important;
+        border: none !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+}
+
+/* Action Group Styling for home.php actions-cell */
+.action-group-inline {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.action-group-inline > a,
+.action-group-inline > form {
+    margin: 0;
+}
+
+.action-group-centered {
+    text-align: center;
+}
+.action-group-centered .button-ver-termo {
+    display: inline-block;
+}
+
+/* Styling for disabled action buttons in tables or elsewhere */
+.button-edit.disabled,
+a.button-edit.disabled,
+button.button-delete:disabled,
+button.button-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #ccc !important;
+    border-color: #bbb !important;
+    color: #666 !important;
+    box-shadow: none !important;
+}
+
+/* Ensure disabled links styled as buttons don't show hover effects if any */
+a.button-edit.disabled:hover,
+a.button-secondary.disabled:hover {
+    background-color: #ccc !important;
+    color: #666 !important;
+    text-decoration: none !important;
+}
+
+/* Styles for Compact Term Display in manage_devolutions.php detailed view */
+/* The duplicated block including Modal Styles and Button Details Style that followed this has been removed by this replacement */
+/* The margin-bottom rules for direct children of .actions-cell previously here were removed as 'gap' handles spacing. */
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+    position: relative;
+}
+
+.modal-close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+}
+
+.modal-close-button:hover,
+.modal-close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
