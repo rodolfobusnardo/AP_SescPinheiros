@@ -325,8 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (selectedIds.length > 0) {
                 // current_user_is_admin is a global variable from PHP
                 if (typeof current_user_is_admin !== 'undefined' && current_user_is_admin) {
-                    alert('Funcionalidade "Doar" (para IDs: ' + selectedIds.join(',') + ') será implementada futuramente.');
-                    // Later, this will call the actual donation handler
+                    window.location.href = 'generate_donation_term_page.php?item_ids=' + selectedIds.join(',');
                 } else {
                     alert('Você não tem permissão para executar esta ação.');
                 }
