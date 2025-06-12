@@ -5,7 +5,8 @@ if (!function_exists('is_admin')) {
 start_secure_session();
 require_once __DIR__ . '/../db_connect.php';
 
-$unidade_nome_settings = 'Sistema de Achados e Perdidos'; // Default title
+// Variable to store just the unit name from DB
+$db_specific_unidade_nome = '';
 if (isset($conn) && $conn instanceof mysqli) {
     $stmt_settings = $conn->prepare("SELECT unidade_nome FROM settings WHERE config_id = 1");
     if ($stmt_settings) {
@@ -13,8 +14,8 @@ if (isset($conn) && $conn instanceof mysqli) {
         $result_settings = $stmt_settings->get_result();
         if ($result_settings->num_rows > 0) {
             $row_settings = $result_settings->fetch_assoc();
-            if (!empty($row_settings['unidade_nome'])) {
-                $unidade_nome_settings = htmlspecialchars($row_settings['unidade_nome']);
+            if (!empty(trim($row_settings['unidade_nome']))) {
+                $db_specific_unidade_nome = htmlspecialchars(trim($row_settings['unidade_nome']));
             }
         }
         $stmt_settings->close();
@@ -25,6 +26,17 @@ if (isset($conn) && $conn instanceof mysqli) {
     error_log("Database connection not available in header.php or not a mysqli object.");
 }
 
+// Construct page title and H1
+$base_site_title = "Sistema de Achados e Perdidos";
+$display_page_title = $base_site_title;
+$display_h1_title = $base_site_title;
+
+if (!empty($db_specific_unidade_nome)) {
+    $suffix = " - Sesc " . $db_specific_unidade_nome;
+    $display_page_title .= $suffix;
+    $display_h1_title .= $suffix;
+}
+
 $is_index_page = basename($_SERVER['PHP_SELF']) == 'index.php';
 ?>
 <!DOCTYPE html>
@@ -32,12 +44,12 @@ $is_index_page = basename($_SERVER['PHP_SELF']) == 'index.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $unidade_nome_settings; ?></title>
+    <title><?php echo $display_page_title; ?></title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <header>
-        <h1><?php echo $unidade_nome_settings; ?></h1>
+        <h1><?php echo $display_h1_title; ?></h1>
         <nav>
             <ul>
                 <?php if (!$is_index_page): ?>
