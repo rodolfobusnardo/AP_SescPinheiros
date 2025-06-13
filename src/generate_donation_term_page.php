@@ -1,207 +1,221 @@
 <?php
-require_once __DIR__ . '/auth.php'; // Includes start_secure_session() and auth functions
-require_once __DIR__ . '/db_connect.php';
+require_once '../auth.php'; // Includes start_secure_session()
+require_once '../db_connect.php';
 
-require_admin('/index.php?error=unauthorized_donation_page'); // Ensure only admins can access
+// Ensure session is started (start_secure_session might be called in auth.php)
+// If not, uncomment: start_secure_session();
 
-$item_ids_str = filter_input(INPUT_GET, 'item_ids', FILTER_SANITIZE_STRING);
-$item_ids_array_raw = [];
+require_admin('../index.php?error=pleaselogin'); // require_login() might be more appropriate if any admin can access
+
+// Line 7 (or around here): Fix for FILTER_SANITIZE_STRING
+$item_ids_str = $_GET['item_ids'] ?? ''; // Default to empty string if not set
+
+$page_error_message = $_SESSION['generate_donation_page_error_message'] ?? null;
+unset($_SESSION['generate_donation_page_error_message']);
+
+$item_ids = [];
 $valid_item_ids_for_donation = [];
-$items_for_donation_details = [];
-$category_summary = [];
-$error_message = '';
-$summary_text = 'Nenhum item válido selecionado para doação.';
+$item_summary_by_category = [];
+$total_items_for_donation = 0;
 
 if (empty($item_ids_str)) {
-    $_SESSION['home_page_error_message'] = 'Nenhum ID de item fornecido para doação.';
+    $_SESSION['home_page_error_message'] = "Nenhum item selecionado para doação.";
     header('Location: /home.php');
     exit();
 }
 
-$item_ids_array_raw = explode(',', $item_ids_str);
-$item_ids_array_int = [];
-foreach ($item_ids_array_raw as $id_str) {
-    $id_int = filter_var(trim($id_str), FILTER_VALIDATE_INT);
+$item_ids_array = explode(',', $item_ids_str);
+foreach ($item_ids_array as $id_str_loop) { // Renamed $id to $id_str_loop to avoid conflict if register_globals is on (though unlikely)
+    $id_int = filter_var(trim($id_str_loop), FILTER_VALIDATE_INT);
     if ($id_int !== false && $id_int > 0) {
-        $item_ids_array_int[] = $id_int;
+        $item_ids[] = $id_int;
     }
 }
 
-if (empty($item_ids_array_int)) {
-    $_SESSION['home_page_error_message'] = 'IDs de item fornecidos são inválidos.';
+if (empty($item_ids)) {
+    $_SESSION['home_page_error_message'] = "IDs de itens inválidos fornecidos.";
     header('Location: /home.php');
     exit();
 }
 
-// Fetch item details for valid and 'Pendente' items
-if (!empty($item_ids_array_int)) {
-    $placeholders = implode(',', array_fill(0, count($item_ids_array_int), '?'));
-    $sql = "SELECT i.id, i.name, i.status, c.name AS category_name
-            FROM items i
-            JOIN categories c ON i.category_id = c.id
-            WHERE i.id IN ($placeholders) AND i.status = 'Pendente'";
+// Fetch item details (name, category) for valid, 'Pendente' items
+if ($conn && !empty($item_ids)) {
+    $placeholders = implode(',', array_fill(0, count($item_ids), '?'));
+    $sql_items = "SELECT i.id, i.name AS item_name, c.name AS category_name
+                  FROM items i
+                  JOIN categories c ON i.category_id = c.id
+                  WHERE i.id IN ($placeholders) AND i.status = 'Pendente'";
 
-    $stmt = $conn->prepare($sql);
-    if ($stmt) {
-        // Dynamically bind parameters
-        $types = str_repeat('i', count($item_ids_array_int));
-        $stmt->bind_param($types, ...$item_ids_array_int);
+    $stmt_items = $conn->prepare($sql_items);
+    if ($stmt_items) {
+        $types = str_repeat('i', count($item_ids));
+        $stmt_items->bind_param($types, ...$item_ids);
+        $stmt_items->execute();
+        $result_items = $stmt_items->get_result();
 
-        if ($stmt->execute()) {
-            $result = $stmt->get_result();
-            while ($row = $result->fetch_assoc()) {
-                $items_for_donation_details[] = $row;
-                $valid_item_ids_for_donation[] = $row['id'];
-                if (!isset($category_summary[$row['category_name']])) {
-                    $category_summary[$row['category_name']] = 0;
-                }
-                $category_summary[$row['category_name']]++;
+        while ($row = $result_items->fetch_assoc()) {
+            $valid_item_ids_for_donation[] = $row['id'];
+            if (!isset($item_summary_by_category[$row['category_name']])) {
+                $item_summary_by_category[$row['category_name']] = 0;
             }
-        } else {
-            error_log("Error executing statement to fetch items for donation: " . $stmt->error);
-            $error_message = "Erro ao buscar detalhes dos itens. Tente novamente.";
+            $item_summary_by_category[$row['category_name']]++;
+            $total_items_for_donation++;
         }
-        $stmt->close();
+        $stmt_items->close();
     } else {
-        error_log("Error preparing statement to fetch items for donation: " . $conn->error);
-        $error_message = "Erro ao preparar busca de itens. Tente novamente.";
+        error_log("DB Prepare Error (fetch items for donation): " . $conn->error);
+        $page_error_message = "Erro ao buscar detalhes dos itens. Tente novamente.";
     }
+} else if (!$conn) {
+     error_log("DB Connection failed on generate_donation_term_page.");
+     $page_error_message = "Erro de conexão com o banco de dados.";
 }
 
-if (empty($valid_item_ids_for_donation)) {
-    $_SESSION['home_page_error_message'] = 'Nenhum dos itens selecionados está disponível para doação (status "Pendente") ou os IDs são inválidos.';
+
+if ($total_items_for_donation === 0 && empty($page_error_message)) {
+    if (count($item_ids) > 0) { // If some IDs were passed but none were valid/Pendente
+        $_SESSION['home_page_error_message'] = "Nenhum dos itens selecionados está disponível para doação (podem não estar 'Pendentes' ou IDs são inválidos).";
+    } else { // Should have been caught by earlier checks
+         $_SESSION['home_page_error_message'] = "Nenhum item válido para doação.";
+    }
     header('Location: /home.php');
     exit();
 }
 
-// Generate summary text
-if (!empty($category_summary)) {
-    $summary_parts = [];
-    foreach ($category_summary as $category => $count) {
-        $summary_parts[] = htmlspecialchars($count) . " - " . htmlspecialchars($category);
-    }
-    $summary_text = "Itens para Doação: " . implode(', ', $summary_parts) . ".";
-}
+// Sort summary by category name for consistent display
+ksort($item_summary_by_category);
 
-// Default values
+$item_summary_display = [];
+foreach ($item_summary_by_category as $category => $count) {
+    $item_summary_display[] = htmlspecialchars($count) . " - " . htmlspecialchars($category);
+}
+$item_summary_str = implode(', ', $item_summary_display);
+
+
+$current_user_name = $_SESSION['username'] ?? 'N/A';
 $current_date = date('Y-m-d');
 $current_time = date('H:i');
-$responsible_user = isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : '';
 
-require_once __DIR__ . '/templates/header.php';
+require_once '../templates/header.php';
 ?>
 
-<div class="container">
+<div class="container register-item-container">
     <h2>Registrar Termo de Doação</h2>
 
-    <?php if (!empty($error_message)): ?>
-        <p class="error-message"><?php echo htmlspecialchars($error_message); ?></p>
-    <?php endif; ?>
-     <?php if (isset($_SESSION['generate_donation_page_error_message'])): ?>
-        <p class="error-message"><?php echo htmlspecialchars($_SESSION['generate_donation_page_error_message']); ?></p>
-        <?php unset($_SESSION['generate_donation_page_error_message']); ?>
+    <?php if ($page_error_message): ?>
+        <p class="error-message"><?php echo htmlspecialchars($page_error_message); ?></p>
     <?php endif; ?>
 
-
-    <p><?php echo $summary_text; ?></p>
-    <p>Total de itens: <?php echo count($valid_item_ids_for_donation); ?></p>
-
-    <form action="submit_donation_handler.php" method="POST" id="donationForm" class="form-modern">
-        <fieldset>
-            <legend>Dados da Doação</legend>
-            <div class="form-group">
-                <label for="responsible_donation">Responsável pela Doação (Sistema):</label>
-                <input type="text" id="responsible_donation" name="responsible_donation" value="<?php echo $responsible_user; ?>" required readonly class="form-control-readonly">
-            </div>
-            <div class="form-row">
-                <div class="form-group_col">
-                    <label for="donation_date">Data da Doação:</label>
-                    <input type="date" id="donation_date" name="donation_date" value="<?php echo $current_date; ?>" required class="form-control">
-                </div>
-                <div class="form-group_col">
-                    <label for="donation_time">Hora da Doação:</label>
-                    <input type="time" id="donation_time" name="donation_time" value="<?php echo $current_time; ?>" required class="form-control">
-                </div>
-            </div>
-        </fieldset>
-
-        <fieldset>
-            <legend>Instituição Recebedora</legend>
-            <div class="form-group">
-                <label for="institution_name">Nome da Instituição:</label>
-                <input type="text" id="institution_name" name="institution_name" required class="form-control">
-            </div>
-            <div class="form-row">
-                <div class="form-group_col">
-                    <label for="institution_cnpj">CNPJ:</label>
-                    <input type="text" id="institution_cnpj" name="institution_cnpj" class="form-control">
-                </div>
-                <div class="form-group_col">
-                    <label for="institution_ie">IE (Inscrição Estadual):</label>
-                    <input type="text" id="institution_ie" name="institution_ie" class="form-control">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="institution_responsible_name">Nome do Responsável (Instituição):</label>
-                <input type="text" id="institution_responsible_name" name="institution_responsible_name" required class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="institution_phone">Telefone (Instituição):</label>
-                <input type="text" id="institution_phone" name="institution_phone" class="form-control">
-            </div>
-            <div class="form-group">
-                <label for="institution_address_street">Endereço (Rua/Av.):</label>
-                <input type="text" id="institution_address_street" name="institution_address_street" class="form-control">
-            </div>
-            <div class="form-row">
-                <div class="form-group_col form-group_col-short">
-                    <label for="institution_address_number">Número:</label>
-                    <input type="text" id="institution_address_number" name="institution_address_number" class="form-control">
-                </div>
-                <div class="form-group_col">
-                    <label for="institution_address_bairro">Bairro:</label>
-                    <input type="text" id="institution_address_bairro" name="institution_address_bairro" class="form-control">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group_col">
-                    <label for="institution_address_cidade">Cidade:</label>
-                    <input type="text" id="institution_address_cidade" name="institution_address_cidade" class="form-control">
-                </div>
-                <div class="form-group_col form-group_col-short">
-                    <label for="institution_address_estado">Estado (UF):</label>
-                    <input type="text" id="institution_address_estado" name="institution_address_estado" class="form-control" maxlength="2">
-                </div>
-                 <div class="form-group_col">
-                    <label for="institution_address_cep">CEP:</label>
-                    <input type="text" id="institution_address_cep" name="institution_address_cep" class="form-control">
-                </div>
-            </div>
-        </fieldset>
-
-        <fieldset>
-            <legend>Assinatura do Responsável da Instituição</legend>
-            <p>Por favor, o responsável pela instituição deve assinar no quadro abaixo:</p>
-            <div id="signaturePadContainer" style="border: 1px solid #ccc; max-width:400px; height:200px; margin-bottom:10px; position: relative;">
-                <canvas id="signatureCanvas" style="width: 100%; height: 100%;"></canvas>
-            </div>
-            <button type="button" id="clearSignatureButton" class="button-secondary">Limpar Assinatura</button>
-            <input type="hidden" name="signature_data" id="signatureDataInput">
-        </fieldset>
-
-        <input type="hidden" name="item_ids_for_donation" value="<?php echo htmlspecialchars(implode(',', $valid_item_ids_for_donation)); ?>">
-
-        <div class="form-action-buttons-group" style="margin-top: 20px;">
-            <a href="/home.php" class="button-secondary">Cancelar</a>
-            <button type="submit" class="button-primary" id="submitDonationButton">Enviar para Aprovação</button>
+    <?php if ($total_items_for_donation > 0): ?>
+        <div class="data-section-rounded">
+            <h4>Itens para Doação</h4>
+            <p><?php echo $item_summary_str; ?>.</p>
+            <p><strong>Total de itens: <?php echo $total_items_for_donation; ?></strong></p>
         </div>
-    </form>
+
+        <form action="submit_donation_handler.php" method="POST" id="donationForm" class="form-modern">
+            <fieldset class="data-section-rounded">
+                <legend>Dados da Doação</legend>
+                <div class="form-group">
+                    <label for="responsible_donation">Responsável pela Doação (Sistema):</label>
+                    <input type="text" id="responsible_donation" name="responsible_donation" value="<?php echo htmlspecialchars($current_user_name); ?>" required readonly class="form-control-readonly">
+                </div>
+                <div class="form-row">
+                    <div class="form-group_col">
+                        <label for="donation_date">Data da Doação:</label>
+                        <input type="date" id="donation_date" name="donation_date" value="<?php echo $current_date; ?>" required class="form-control">
+                    </div>
+                    <div class="form-group_col">
+                        <label for="donation_time">Hora da Doação:</label>
+                        <input type="time" id="donation_time" name="donation_time" value="<?php echo $current_time; ?>" required class="form-control">
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="data-section-rounded">
+                <legend>Instituição Recebedora</legend>
+                 <div class="form-row">
+                    <div class="form-group_col_full">
+                        <label for="institution_name">Nome da Instituição:</label>
+                        <input type="text" id="institution_name" name="institution_name" required class="form-control">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group_col">
+                        <label for="institution_cnpj">CNPJ:</label>
+                        <input type="text" id="institution_cnpj" name="institution_cnpj" class="form-control cnpj-mask">
+                    </div>
+                    <div class="form-group_col">
+                        <label for="institution_ie">IE (Inscrição Estadual):</label>
+                        <input type="text" id="institution_ie" name="institution_ie" class="form-control">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group_col">
+                        <label for="institution_responsible_name">Nome do Responsável (Instituição):</label>
+                        <input type="text" id="institution_responsible_name" name="institution_responsible_name" required class="form-control">
+                    </div>
+                    <div class="form-group_col">
+                        <label for="institution_phone">Telefone (Instituição):</label>
+                        <input type="text" id="institution_phone" name="institution_phone" class="form-control phone-mask">
+                    </div>
+                </div>
+                <div class="form-row">
+                     <div class="form-group_col form-group_col-large">
+                        <label for="institution_address_street">Endereço (Rua/Av.):</label>
+                        <input type="text" id="institution_address_street" name="institution_address_street" class="form-control">
+                    </div>
+                    <div class="form-group_col form-group_col-small">
+                        <label for="institution_address_number">Número:</label>
+                        <input type="text" id="institution_address_number" name="institution_address_number" class="form-control number-mask">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group_col">
+                        <label for="institution_address_bairro">Bairro:</label>
+                        <input type="text" id="institution_address_bairro" name="institution_address_bairro" class="form-control">
+                    </div>
+                    <div class="form-group_col">
+                        <label for="institution_address_cidade">Cidade:</label>
+                        <input type="text" id="institution_address_cidade" name="institution_address_cidade" class="form-control">
+                    </div>
+                    <div class="form-group_col">
+                        <label for="institution_address_estado">Estado (UF):</label>
+                        <input type="text" id="institution_address_estado" name="institution_address_estado" class="form-control estado-mask" maxlength="2">
+                    </div>
+                     <div class="form-group_col">
+                        <label for="institution_address_cep">CEP:</label>
+                        <input type="text" id="institution_address_cep" name="institution_address_cep" class="form-control cep-mask">
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="data-section-rounded">
+                <legend>Assinatura do Responsável da Instituição</legend>
+                <p>Por favor, o responsável pela instituição deve assinar no quadro abaixo:</p>
+                <div id="signaturePadContainer" style="border: 1px solid #ccc; max-width:400px; min-height:150px; height:200px; margin-bottom:10px; position: relative; touch-action: none;">
+                    <canvas id="signatureCanvas" style="width: 100%; height: 100%; touch-action: none;"></canvas>
+                </div>
+                <button type="button" id="clearSignatureButton" class="button-secondary">Limpar Assinatura</button>
+                <input type="hidden" name="signature_data" id="signatureDataInput">
+            </fieldset>
+
+            <input type="hidden" name="item_ids_for_donation" value="<?php echo htmlspecialchars(implode(',', $valid_item_ids_for_donation)); ?>">
+
+            <div class="form-action-buttons-group" style="margin-top: 20px;">
+                <a href="/home.php" class="button-secondary">Cancelar</a>
+                <button type="submit" class="button-primary" id="submitDonationButton">Enviar para Aprovação</button>
+            </div>
+        </form>
+    <?php else: ?>
+        <p>Não há itens válidos para este termo de doação. Por favor, <a href="/home.php">volte</a> e selecione itens pendentes.</p>
+    <?php endif; ?>
 </div>
 
-<!-- Assuming signature_pad library is in /js/signature_pad.umd.min.js -->
-<!-- If you downloaded it to a different path, adjust accordingly. -->
-<!-- Make sure this path is correct relative to your web root. -->
-<script src="/js/signature_pad.umd.min.js"></script>
+<!-- 1. Load SignaturePad library FIRST -->
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+<!-- 2. THEN include your custom script that uses SignaturePad -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // --- Input Masking Logic ---
@@ -263,43 +277,64 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Signature Pad Integration ---
     const canvas = document.getElementById('signatureCanvas');
     const signaturePadContainer = document.getElementById('signaturePadContainer');
-    let signaturePad;
+    let signaturePad = null;
 
     function resizeCanvas() {
-        if (canvas && signaturePadContainer) {
-            const ratio =  Math.max(window.devicePixelRatio || 1, 1);
-            canvas.width = signaturePadContainer.offsetWidth * ratio;
-            canvas.height = signaturePadContainer.offsetHeight * ratio;
-            canvas.getContext("2d").scale(ratio, ratio);
-            if (signaturePad) {
-                signaturePad.clear(); // Clear after resize
-            }
+        if (!canvas || !signaturePadContainer) return;
+        const ratio =  Math.max(window.devicePixelRatio || 1, 1);
+
+        const containerWidth = signaturePadContainer.offsetWidth;
+        if (containerWidth === 0) {
+            return;
+        }
+
+        canvas.width = containerWidth * ratio;
+        canvas.height = signaturePadContainer.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+        if (signaturePad) {
+            signaturePad.clear();
+        } else {
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
     }
 
     if (canvas) {
-        signaturePad = new SignaturePad(canvas, {
-            backgroundColor: 'rgb(255, 255, 255)' // White background
-        });
+        setTimeout(function() {
+            // Check if SignaturePad is loaded
+            if (typeof SignaturePad === 'undefined') {
+                console.error('SignaturePad library not loaded. Check script path or CDN.');
+                // Optionally, display an error message to the user on the page
+                const padContainer = document.getElementById('signaturePadContainer');
+                if(padContainer) padContainer.innerHTML = '<p class="error-message" style="padding:10px;">Erro ao carregar o campo de assinatura. A biblioteca SignaturePad não foi encontrada.</p>';
+                return;
+            }
 
-        // Call resizeCanvas initially and on window resize
-        // Debounce resize function to avoid performance issues
-        let resizeTimeout;
-        window.addEventListener("resize", function() {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(resizeCanvas, 250);
-        });
-        resizeCanvas(); // Initial resize
+            signaturePad = new SignaturePad(canvas, {
+                backgroundColor: 'rgb(255, 255, 255)'
+            });
+            console.log('Signature Pad initialized:', signaturePad);
+            resizeCanvas();
+
+            let resizeTimeout;
+            window.addEventListener("resize", function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(resizeCanvas, 250);
+            });
+        }, 100);
 
     } else {
-        console.error("Signature canvas not found!");
+        console.error("Signature canvas element not found!");
     }
 
-
     const clearSignatureButton = document.getElementById('clearSignatureButton');
-    if (clearSignatureButton && signaturePad) {
+    if (clearSignatureButton) {
         clearSignatureButton.addEventListener('click', function() {
-            signaturePad.clear();
+            if (signaturePad) {
+                signaturePad.clear();
+            } else {
+                console.error("Attempted to clear non-existent signature pad.");
+            }
         });
     }
 
@@ -307,37 +342,33 @@ document.addEventListener('DOMContentLoaded', function () {
     const signatureDataInput = document.getElementById('signatureDataInput');
     const submitButton = document.getElementById('submitDonationButton');
 
-    if (donationForm && signatureDataInput && signaturePad) {
+    if (donationForm && signatureDataInput) {
         donationForm.addEventListener('submit', function(event) {
-            if (signaturePad.isEmpty()) {
+            if (!signaturePad || signaturePad.isEmpty()) {
                 alert("Por favor, forneça a assinatura do responsável da instituição.");
-                event.preventDefault(); // Prevent form submission
-                // Re-enable button if it was disabled
-                if(submitButton) submitButton.disabled = false;
+                event.preventDefault();
+                if(submitButton) submitButton.disabled = false; // Re-enable button if submission is blocked
                 return false;
             }
+            // Ensure signature data is captured before form proceeds
             signatureDataInput.value = signaturePad.toDataURL('image/png');
         });
     }
 
-    // Disable button briefly on submit to prevent double-clicks
-    if(submitButton) {
-        submitButton.addEventListener('click', function() {
-            // A small delay to allow the form submission event to capture signature
-            // or for the empty signature alert to fire.
-            setTimeout(() => {
-                if (!signaturePad.isEmpty() || !donationForm.checkValidity()) { // check form validity as well
-                     // if signature is not empty OR form is invalid (which will prevent submission anyway)
-                    this.disabled = true;
-                }
-                // If signature is empty, the submit listener should preventDefault and re-enable.
-                // If form is invalid, browser will handle it.
-            }, 50);
+    // More robust submit button disabling logic
+    if(donationForm && submitButton) {
+        donationForm.addEventListener('submit', function(event) {
+            // If the signature check above (or any other client-side validation) fails and calls event.preventDefault(),
+            // this part might not be strictly necessary for the disabling effect,
+            // but it's a good practice to disable on successful submission start.
+            if (!event.defaultPrevented) { // Only disable if submission is not already prevented
+                 submitButton.disabled = true;
+                 // Optional: Add a message like "Processando..."
+                 // submitButton.textContent = 'Processando...';
+            }
         });
     }
 });
 </script>
 
-<?php
-require_once __DIR__ . '/templates/footer.php';
-?>
+<?php require_once '../templates/footer.php'; ?>

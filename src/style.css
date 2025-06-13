@@ -902,3 +902,20 @@ a.button-secondary.disabled:hover {
     text-decoration: none;
     cursor: pointer;
 }
+
+/* Styles for rounded data sections */
+.data-section-rounded {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    background-color: #f9f9f9;
+}
+
+.data-section-rounded legend {
+    font-weight: bold;
+    color: #007bff; /* Bootstrap primary color */
+    padding: 0 5px; /* Add some horizontal padding around the legend text */
+    margin-left: 10px; /* Aligns legend text nicely if content inside fieldset also has padding */
+    /* font-size: 1.1em; /* Slightly larger legend text */
+}
