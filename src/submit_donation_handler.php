@@ -14,7 +14,7 @@ $conn->begin_transaction();
 
 try {
     // --- 1. Retrieve and Sanitize Form Data ---
-    $responsible_donation_from_session = $_SESSION['username'] ?? ''; // Should match the readonly field
+    $responsible_donation_from_session = $_SESSION['username'] ?? '';
     $user_id_from_session = $_SESSION['user_id'] ?? null;
 
     $donation_date = trim($_POST['donation_date'] ?? '');
@@ -38,7 +38,7 @@ try {
     if (empty($user_id_from_session)) {
         $errors[] = "Sessão de usuário inválida. Faça login novamente.";
     }
-    if (empty($responsible_donation_from_session)) { // Should not happen if user_id is set
+    if (empty($responsible_donation_from_session)) {
         $errors[] = "Nome do responsável pela doação (usuário logado) não encontrado.";
     }
     if (empty($donation_date)) $errors[] = "Data da doação é obrigatória.";
@@ -48,11 +48,9 @@ try {
     if (empty($signature_data_base64)) $errors[] = "Assinatura é obrigatória.";
     if (empty($item_ids_str_for_donation)) $errors[] = "Nenhum item ID fornecido para doação.";
 
-    // Validate date format (YYYY-MM-DD)
     if (!empty($donation_date) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $donation_date)) {
         $errors[] = "Formato de data inválido. Use AAAA-MM-DD.";
     }
-    // Validate time format (HH:MM)
     if (!empty($donation_time) && !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $donation_time)) {
         $errors[] = "Formato de hora inválido. Use HH:MM.";
     }
@@ -84,11 +82,10 @@ try {
         throw new Exception("Falha ao decodificar dados da assinatura.");
     }
 
-    $upload_dir = __DIR__ . '/../uploads/donation_signatures/';
-    // IMPORTANT: Ensure this directory exists and is writable by the web server.
-    // You might need to create it manually: mkdir -p uploads/donation_signatures && chmod 775 uploads/donation_signatures
+    // MODIFIED PATH for server-side file system
+    $upload_dir = __DIR__ . '/uploads/signatures/';
     if (!is_dir($upload_dir)) {
-        if (!mkdir($upload_dir, 0775, true)) { // Attempt to create if not exists
+        if (!mkdir($upload_dir, 0775, true)) {
              error_log("Failed to create signature upload directory: " . $upload_dir);
              throw new Exception("Erro no servidor: Diretório de upload de assinaturas não existe e não pôde ser criado.");
         }
@@ -96,7 +93,8 @@ try {
 
     $signature_filename = 'sig_term_' . time() . '_' . $user_id_from_session . '.png';
     $signature_file_path_full = $upload_dir . $signature_filename;
-    $signature_db_path = 'uploads/donation_signatures/' . $signature_filename;
+    // MODIFIED PATH for database (relative to webroot)
+    $signature_db_path = 'src/uploads/signatures/' . $signature_filename;
 
     if (!file_put_contents($signature_file_path_full, $base64_data)) {
         error_log("Failed to save signature image to: " . $signature_file_path_full);
@@ -130,12 +128,11 @@ try {
     }
 
     if (!empty($problematic_items_info)) {
-        // Potentially delete already saved signature if we abort here? Or leave for cleanup script.
-        // For now, just error out.
-        unlink($signature_file_path_full); // Attempt to delete saved signature if items are problematic
+        if (file_exists($signature_file_path_full)) {
+            unlink($signature_file_path_full);
+        }
         throw new Exception("Alguns itens não podem ser doados: " . implode(', ', $problematic_items_info) . ". Apenas itens com status 'Pendente' são permitidos.");
     }
-
 
     // B. Insert into donation_terms
     $sql_insert_term = "INSERT INTO donation_terms (user_id, responsible_donation, donation_date, donation_time,
@@ -179,12 +176,10 @@ try {
     if (!$stmt_update_items->execute()) throw new Exception("Erro ao atualizar status dos itens: " . $stmt_update_items->error);
 
     if ($stmt_update_items->affected_rows != count($item_ids_array)) {
-        // This might indicate some items were not updated, could be a problem or already in desired state (though check A should prevent this)
         error_log("Warning: Number of items updated (" . $stmt_update_items->affected_rows . ") does not match expected (" . count($item_ids_array) . ") for term ID " . $term_id);
     }
     $stmt_update_items->close();
 
-    // --- 5. Transaction Management and Redirect ---
     $conn->commit();
     $_SESSION['home_page_success_message'] = "Termo de doação (ID: {$term_id}) enviado para aprovação com sucesso!";
     header('Location: /home.php');
@@ -194,7 +189,6 @@ try {
     $conn->rollback();
     error_log("Donation Submission Error: " . $e->getMessage());
     $_SESSION['generate_donation_page_error_message'] = $e->getMessage();
-    // Pass back original item_ids if redirecting to the form page to allow retrying.
     $redirect_url = 'generate_donation_term_page.php';
     if (!empty($item_ids_str_for_donation)) {
         $redirect_url .= '?item_ids=' . urlencode($item_ids_str_for_donation);

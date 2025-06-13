@@ -36,9 +36,8 @@ if ($stmt_term) {
         if ($result_term->num_rows === 1) {
             $term_data = $result_term->fetch_assoc();
             if ($term_data['status'] !== 'Doado') {
-                // Allow viewing only if 'Doado', or adjust if other statuses are viewable by these roles
                 $page_error_message = "Este termo de doação (ID: " . htmlspecialchars($term_id) . ") não está com status 'Doado'. Status atual: " . htmlspecialchars($term_data['status']) . ".";
-                $term_data = null; // Prevent display of data if not 'Doado'
+                $term_data = null;
             }
         } else {
             $page_error_message = "Termo de doação com ID " . htmlspecialchars($term_id) . " não encontrado.";
@@ -53,7 +52,6 @@ if ($stmt_term) {
     $page_error_message = "Erro crítico ao preparar a busca dos dados do termo. Contacte o suporte.";
 }
 
-// Fetch item summary if term data is valid
 if ($term_data) {
     $item_summary_parts = [];
     $sql_summary = "SELECT c.name AS category_name, COUNT(dti.item_id) AS item_count
@@ -145,12 +143,7 @@ require_once 'templates/header.php';
 
         <div class="term-section">
             <h3>Assinatura do Recebedor</h3>
-            <?php
-            // Path stored is relative to project root, e.g., "uploads/donation_signatures/..."
-            // If this page is in /src/ and uploads is at project root, path is ../uploads/...
-            $signature_path_for_img = '../' . htmlspecialchars($term_data['signature_image_path']);
-            ?>
-            <img src="<?php echo $signature_path_for_img; ?>" alt="Assinatura do Recebedor" class="signature-image">
+            <img src="/<?php echo htmlspecialchars($term_data['signature_image_path']); ?>" alt="Assinatura do Recebedor" class="signature-image">
         </div>
 
         <div class="term-actions no-print" style="margin-top: 30px;">
