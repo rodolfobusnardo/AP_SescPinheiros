@@ -3,9 +3,8 @@ require_once '../auth.php'; // Includes start_secure_session()
 require_once '../db_connect.php';
 
 // Access Control: Only 'admin-aprovador' or 'superAdmin'
-// Corrected to use $_SESSION['user_role']
 if (!isset($_SESSION['user_role']) || ($_SESSION['user_role'] !== 'admin-aprovador' && $_SESSION['user_role'] !== 'superAdmin')) {
-    $_SESSION['approval_action_message'] = 'Você não tem permissão para executar esta ação.';
+    $_SESSION['approval_action_message'] = 'Acesso negado. Requer função de Admin Aprovador ou SuperAdmin para esta ação.';
     $_SESSION['approval_action_success'] = false;
     header('Location: approve_donations_page.php');
     exit();

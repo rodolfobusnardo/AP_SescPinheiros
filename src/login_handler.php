@@ -21,11 +21,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    $sql = "SELECT id, username, password, role FROM users WHERE username = ?"; // Ensure role is fetched
+    // REVERTED SQL to NOT include is_donation_approver
+    $sql = "SELECT id, username, password, role FROM users WHERE username = ?";
     $stmt = $conn->prepare($sql);
 
     if ($stmt === false) {
         // Handle error, e.g., log it or redirect with a generic error
+        error_log("SQL Prepare Error in login_handler.php: " . $conn->error);
         header('Location: index.php?error=sqlerror');
         exit();
     }
@@ -39,7 +41,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
-            $_SESSION['user_role'] = $user['role']; // Store user role
+            $_SESSION['user_role'] = $user['role'];
+            // REMOVED: Line storing is_donation_approver status in session
+            // $_SESSION['is_donation_approver'] = (bool)$user['is_donation_approver'];
             header('Location: home.php'); // Redirect to a home page
             exit();
         } else {

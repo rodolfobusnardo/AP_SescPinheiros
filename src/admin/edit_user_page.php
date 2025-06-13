@@ -17,8 +17,8 @@ if (!$user_id_to_edit) {
     exit();
 }
 
-// Fetch current user data
-$sql_user = "SELECT id, username, role, is_donation_approver FROM users WHERE id = ?";
+// Fetch current user data - REVERTED SQL
+$sql_user = "SELECT id, username, role FROM users WHERE id = ?";
 $stmt_user = $conn->prepare($sql_user);
 
 if ($stmt_user) {
@@ -59,8 +59,8 @@ require_once '../templates/header.php';
             'emptyfields_edituser' => 'Nome de usuário e função são obrigatórios.',
             'usernametoolong_edituser' => 'Nome de usuário muito longo (máx 255).',
             'usernametooshort_edituser' => 'Nome de usuário muito curto (mín 3).',
-            'sqlerror_fetchuser' => 'Erro ao buscar dados do usuário para edição.', // Should not happen here if already fetched
-            'usernotfound_edit' => 'Usuário não encontrado para edição.', // Should not happen here
+            'sqlerror_fetchuser' => 'Erro ao buscar dados do usuário para edição.',
+            'usernotfound_edit' => 'Usuário não encontrado para edição.',
             'cannotrenameadmin' => 'O nome de usuário do administrador principal não pode ser alterado.',
             'cannotchangeroleadmin' => 'A função do administrador principal não pode ser alterada.',
             'usernameexists_edit' => 'Erro ao atualizar: Nome de usuário já em uso por outro usuário.',
@@ -106,10 +106,13 @@ require_once '../templates/header.php';
             <?php endif; ?>
         </div>
 
+        <!-- REMOVED Checkbox for is_donation_approver -->
+        <!--
         <div>
             <input type="checkbox" id="is_donation_approver" name="is_donation_approver" value="1" <?php if (!empty($user_data['is_donation_approver']) && $user_data['is_donation_approver'] == 1) echo 'checked'; ?>>
             <label for="is_donation_approver">Aprovador de Doações</label>
         </div>
+        -->
 
         <div style="margin-top: 10px;">
             <p><small>A alteração de senha é realizada através da funcionalidade "Resetar Senha" na página de listagem de usuários.</small></p>
@@ -121,7 +124,6 @@ require_once '../templates/header.php';
         </div>
     </form>
     <?php else: ?>
-        <?php // This part should ideally not be reached if redirects for invalid user work correctly ?>
         <p class="error-message">Não foi possível carregar os dados do usuário para edição.</p>
         <p><a href="manage_users.php">Voltar para a lista de usuários</a></p>
     <?php endif; ?>
@@ -129,7 +131,7 @@ require_once '../templates/header.php';
 
 <?php
 if (isset($conn) && $conn instanceof mysqli) {
-    // $conn->close(); // Usually closed by PHP or footer
+    // $conn->close();
 }
 require_once '../templates/footer.php';
 ?>
