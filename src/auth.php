@@ -27,7 +27,10 @@ function is_admin() {
     if (!is_logged_in()) {
         return false;
     }
-    return isset($_SESSION['user_role']) && ($_SESSION['user_role'] === 'admin' || $_SESSION['user_role'] === 'superAdmin');
+    return isset($_SESSION['user_role']) &&
+           ($_SESSION['user_role'] === 'admin' ||
+            $_SESSION['user_role'] === 'admin-aprovador' ||
+            $_SESSION['user_role'] === 'superAdmin');
 }
 
 function is_super_admin() {

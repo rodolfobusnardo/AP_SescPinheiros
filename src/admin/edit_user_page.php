@@ -18,7 +18,7 @@ if (!$user_id_to_edit) {
 }
 
 // Fetch current user data
-$sql_user = "SELECT id, username, role FROM users WHERE id = ?";
+$sql_user = "SELECT id, username, role, is_donation_approver FROM users WHERE id = ?";
 $stmt_user = $conn->prepare($sql_user);
 
 if ($stmt_user) {
@@ -97,12 +97,18 @@ require_once '../templates/header.php';
             <select id="role" name="role" <?php if ($is_main_admin_user) echo 'disabled'; ?> required>
                 <option value="common" <?php if ($user_data['role'] === 'common') echo 'selected'; ?>>Comum</option>
                 <option value="admin" <?php if ($user_data['role'] === 'admin') echo 'selected'; ?>>Admin</option>
+                <option value="admin-aprovador" <?php if ($user_data['role'] === 'admin-aprovador') echo 'selected'; ?>>Admin Aprovador</option>
                 <option value="superAdmin" <?php if ($user_data['role'] === 'superAdmin') echo 'selected'; ?>>SuperAdmin</option>
             </select>
             <?php if ($is_main_admin_user): ?>
                 <input type="hidden" name="role" value="<?php echo htmlspecialchars($user_data['role']); ?>">
                 <small class="form-text text-muted">A função do usuário 'admin' não pode ser alterada.</small>
             <?php endif; ?>
+        </div>
+
+        <div>
+            <input type="checkbox" id="is_donation_approver" name="is_donation_approver" value="1" <?php if (!empty($user_data['is_donation_approver']) && $user_data['is_donation_approver'] == 1) echo 'checked'; ?>>
+            <label for="is_donation_approver">Aprovador de Doações</label>
         </div>
 
         <div style="margin-top: 10px;">

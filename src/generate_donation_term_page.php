@@ -51,7 +51,7 @@ if (!empty($item_ids_array_int)) {
             $result = $stmt->get_result();
             while ($row = $result->fetch_assoc()) {
                 $items_for_donation_details[] = $row;
-                $valid_item_ids_for_donation[] = $row['id']; // Store only IDs of actually donatable items
+                $valid_item_ids_for_donation[] = $row['id'];
                 if (!isset($category_summary[$row['category_name']])) {
                     $category_summary[$row['category_name']] = 0;
                 }
@@ -97,6 +97,11 @@ require_once __DIR__ . '/templates/header.php';
     <?php if (!empty($error_message)): ?>
         <p class="error-message"><?php echo htmlspecialchars($error_message); ?></p>
     <?php endif; ?>
+     <?php if (isset($_SESSION['generate_donation_page_error_message'])): ?>
+        <p class="error-message"><?php echo htmlspecialchars($_SESSION['generate_donation_page_error_message']); ?></p>
+        <?php unset($_SESSION['generate_donation_page_error_message']); ?>
+    <?php endif; ?>
+
 
     <p><?php echo $summary_text; ?></p>
     <p>Total de itens: <?php echo count($valid_item_ids_for_donation); ?></p>
@@ -129,7 +134,7 @@ require_once __DIR__ . '/templates/header.php';
             <div class="form-row">
                 <div class="form-group_col">
                     <label for="institution_cnpj">CNPJ:</label>
-                    <input type="text" id="institution_cnpj" name="institution_cnpj" class="form-control cnpj-mask"> <!-- JS mask class -->
+                    <input type="text" id="institution_cnpj" name="institution_cnpj" class="form-control">
                 </div>
                 <div class="form-group_col">
                     <label for="institution_ie">IE (Inscrição Estadual):</label>
@@ -142,7 +147,7 @@ require_once __DIR__ . '/templates/header.php';
             </div>
             <div class="form-group">
                 <label for="institution_phone">Telefone (Instituição):</label>
-                <input type="text" id="institution_phone" name="institution_phone" class="form-control phone-mask"> <!-- JS mask class -->
+                <input type="text" id="institution_phone" name="institution_phone" class="form-control">
             </div>
             <div class="form-group">
                 <label for="institution_address_street">Endereço (Rua/Av.):</label>
@@ -151,7 +156,7 @@ require_once __DIR__ . '/templates/header.php';
             <div class="form-row">
                 <div class="form-group_col form-group_col-short">
                     <label for="institution_address_number">Número:</label>
-                    <input type="text" id="institution_address_number" name="institution_address_number" class="form-control number-mask"> <!-- JS mask class -->
+                    <input type="text" id="institution_address_number" name="institution_address_number" class="form-control">
                 </div>
                 <div class="form-group_col">
                     <label for="institution_address_bairro">Bairro:</label>
@@ -165,11 +170,11 @@ require_once __DIR__ . '/templates/header.php';
                 </div>
                 <div class="form-group_col form-group_col-short">
                     <label for="institution_address_estado">Estado (UF):</label>
-                    <input type="text" id="institution_address_estado" name="institution_address_estado" class="form-control state-mask" maxlength="2"> <!-- JS mask class -->
+                    <input type="text" id="institution_address_estado" name="institution_address_estado" class="form-control" maxlength="2">
                 </div>
                  <div class="form-group_col">
                     <label for="institution_address_cep">CEP:</label>
-                    <input type="text" id="institution_address_cep" name="institution_address_cep" class="form-control cep-mask"> <!-- JS mask class -->
+                    <input type="text" id="institution_address_cep" name="institution_address_cep" class="form-control">
                 </div>
             </div>
         </fieldset>
@@ -177,12 +182,11 @@ require_once __DIR__ . '/templates/header.php';
         <fieldset>
             <legend>Assinatura do Responsável da Instituição</legend>
             <p>Por favor, o responsável pela instituição deve assinar no quadro abaixo:</p>
-            <div id="signaturePadContainer" style="border: 1px solid #ccc; max-width:400px; height:200px; margin-bottom:10px;">
-                <canvas id="signatureCanvas" width="400" height="200"></canvas> <!-- JS will initialize this -->
+            <div id="signaturePadContainer" style="border: 1px solid #ccc; max-width:400px; height:200px; margin-bottom:10px; position: relative;">
+                <canvas id="signatureCanvas" style="width: 100%; height: 100%;"></canvas>
             </div>
             <button type="button" id="clearSignatureButton" class="button-secondary">Limpar Assinatura</button>
             <input type="hidden" name="signature_data" id="signatureDataInput">
-             <!-- Note: JavaScript for signature pad (e.g., SignaturePad by szimek) will be needed here or in script.js -->
         </fieldset>
 
         <input type="hidden" name="item_ids_for_donation" value="<?php echo htmlspecialchars(implode(',', $valid_item_ids_for_donation)); ?>">
@@ -191,13 +195,149 @@ require_once __DIR__ . '/templates/header.php';
             <a href="/home.php" class="button-secondary">Cancelar</a>
             <button type="submit" class="button-primary" id="submitDonationButton">Enviar para Aprovação</button>
         </div>
-         <!-- JS for form validation (e.g., ensure signature is not empty) and submitting signature data will be needed -->
     </form>
 </div>
 
+<!-- Assuming signature_pad library is in /js/signature_pad.umd.min.js -->
+<!-- If you downloaded it to a different path, adjust accordingly. -->
+<!-- Make sure this path is correct relative to your web root. -->
+<script src="/js/signature_pad.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- Input Masking Logic ---
+    const cnpjInput = document.getElementById('institution_cnpj');
+    if (cnpjInput) {
+        cnpjInput.addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            if (v.length > 14) v = v.slice(0, 14);
+            v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+            v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+            v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+            v = v.replace(/(\d{4})(\d)/, '$1-$2');
+            e.target.value = v;
+        });
+    }
+
+    const phoneInput = document.getElementById('institution_phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 11) v = v.slice(0, 11);
+            if (v.length > 10) { // 11 digits (XX) XXXXX-XXXX
+                v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+            } else if (v.length > 6) { // 10 digits (XX) XXXX-XXXX
+                v = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+            } else if (v.length > 2) { // (XX) XXXX
+                v = v.replace(/^(\d{2})(\d*)$/, '($1) $2');
+            } else if (v.length > 0) { // (X
+                v = v.replace(/^(\d*)$/, '($1');
+            }
+            e.target.value = v;
+        });
+    }
+
+    const cepInput = document.getElementById('institution_address_cep');
+    if (cepInput) {
+        cepInput.addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 8) v = v.slice(0, 8);
+            v = v.replace(/^(\d{5})(\d)/, '$1-$2');
+            e.target.value = v;
+        });
+    }
+
+    const estadoInput = document.getElementById('institution_address_estado');
+    if (estadoInput) {
+        estadoInput.addEventListener('input', function (e) {
+            e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 2);
+        });
+    }
+
+    const numeroInput = document.getElementById('institution_address_number');
+    if (numeroInput) {
+        numeroInput.addEventListener('input', function (e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    }
+
+    // --- Signature Pad Integration ---
+    const canvas = document.getElementById('signatureCanvas');
+    const signaturePadContainer = document.getElementById('signaturePadContainer');
+    let signaturePad;
+
+    function resizeCanvas() {
+        if (canvas && signaturePadContainer) {
+            const ratio =  Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = signaturePadContainer.offsetWidth * ratio;
+            canvas.height = signaturePadContainer.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            if (signaturePad) {
+                signaturePad.clear(); // Clear after resize
+            }
+        }
+    }
+
+    if (canvas) {
+        signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgb(255, 255, 255)' // White background
+        });
+
+        // Call resizeCanvas initially and on window resize
+        // Debounce resize function to avoid performance issues
+        let resizeTimeout;
+        window.addEventListener("resize", function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(resizeCanvas, 250);
+        });
+        resizeCanvas(); // Initial resize
+
+    } else {
+        console.error("Signature canvas not found!");
+    }
+
+
+    const clearSignatureButton = document.getElementById('clearSignatureButton');
+    if (clearSignatureButton && signaturePad) {
+        clearSignatureButton.addEventListener('click', function() {
+            signaturePad.clear();
+        });
+    }
+
+    const donationForm = document.getElementById('donationForm');
+    const signatureDataInput = document.getElementById('signatureDataInput');
+    const submitButton = document.getElementById('submitDonationButton');
+
+    if (donationForm && signatureDataInput && signaturePad) {
+        donationForm.addEventListener('submit', function(event) {
+            if (signaturePad.isEmpty()) {
+                alert("Por favor, forneça a assinatura do responsável da instituição.");
+                event.preventDefault(); // Prevent form submission
+                // Re-enable button if it was disabled
+                if(submitButton) submitButton.disabled = false;
+                return false;
+            }
+            signatureDataInput.value = signaturePad.toDataURL('image/png');
+        });
+    }
+
+    // Disable button briefly on submit to prevent double-clicks
+    if(submitButton) {
+        submitButton.addEventListener('click', function() {
+            // A small delay to allow the form submission event to capture signature
+            // or for the empty signature alert to fire.
+            setTimeout(() => {
+                if (!signaturePad.isEmpty() || !donationForm.checkValidity()) { // check form validity as well
+                     // if signature is not empty OR form is invalid (which will prevent submission anyway)
+                    this.disabled = true;
+                }
+                // If signature is empty, the submit listener should preventDefault and re-enable.
+                // If form is invalid, browser will handle it.
+            }, 50);
+        });
+    }
+});
+</script>
+
 <?php
-// Placeholder for inline JS or link to specific JS file for this page
-// e.g. <script src="js/donation_form.js"></script>
-// For now, general script.js might handle some aspects like masks if configured globally.
 require_once __DIR__ . '/templates/footer.php';
 ?>

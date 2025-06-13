@@ -112,6 +112,7 @@ require_once '../templates/header.php';
             <select id="role_reg" name="role" required>
                 <option value="common">Comum</option>
                 <option value="admin">Admin</option>
+                <option value="admin-aprovador">Admin Aprovador</option>
                 <option value="superAdmin">SuperAdmin</option>
             </select>
         </div>

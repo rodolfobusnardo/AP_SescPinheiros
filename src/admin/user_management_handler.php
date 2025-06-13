@@ -69,6 +69,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             $user_id_to_edit = filter_input(INPUT_POST, 'user_id', FILTER_VALIDATE_INT);
             $new_username = trim($_POST['username'] ?? '');
             $new_role = trim($_POST['role'] ?? '');
+            $is_donation_approver = isset($_POST['is_donation_approver']) ? 1 : 0;
 
             if (!$user_id_to_edit) {
                 header('Location: manage_users.php?error=invaliduserid_edit');
@@ -131,7 +132,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $stmt_check_new->close();
             }
 
-            $sql_update = "UPDATE users SET username = ?, role = ? WHERE id = ?";
+            $sql_update = "UPDATE users SET username = ?, role = ?, is_donation_approver = ? WHERE id = ?";
             $stmt_update = $conn->prepare($sql_update);
             if ($stmt_update === false) {
                 error_log("SQL Prepare Error (edit_user): " . $conn->error);
