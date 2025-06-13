@@ -1,6 +1,6 @@
 <?php
-require_once '../auth.php'; // Includes start_secure_session()
-require_once '../db_connect.php';
+require_once 'auth.php'; // Includes start_secure_session()
+require_once 'db_connect.php';
 
 // Ensure session is started (start_secure_session might be called in auth.php)
 // If not, uncomment: start_secure_session();
@@ -96,7 +96,7 @@ $current_user_name = $_SESSION['username'] ?? 'N/A';
 $current_date = date('Y-m-d');
 $current_time = date('H:i');
 
-require_once '../templates/header.php';
+require_once 'templates/header.php';
 ?>
 
 <div class="container register-item-container">
@@ -371,4 +371,4 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-<?php require_once '../templates/footer.php'; ?>
+<?php require_once 'templates/footer.php'; ?>
