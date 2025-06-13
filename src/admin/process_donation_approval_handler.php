@@ -3,7 +3,8 @@ require_once '../auth.php'; // Includes start_secure_session()
 require_once '../db_connect.php';
 
 // Access Control: Only 'admin-aprovador' or 'superAdmin'
-if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin-aprovador' && $_SESSION['role'] !== 'superAdmin')) {
+// Corrected to use $_SESSION['user_role']
+if (!isset($_SESSION['user_role']) || ($_SESSION['user_role'] !== 'admin-aprovador' && $_SESSION['user_role'] !== 'superAdmin')) {
     $_SESSION['approval_action_message'] = 'Você não tem permissão para executar esta ação.';
     $_SESSION['approval_action_success'] = false;
     header('Location: approve_donations_page.php');
@@ -11,7 +12,8 @@ if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'admin-aprovador' && $_S
 }
 
 // Validate action and term_id
-$action = filter_input(INPUT_GET, 'action', FILTER_SANITIZE_STRING);
+// Corrected FILTER_SANITIZE_STRING
+$action = strval($_GET['action'] ?? '');
 $term_id = filter_input(INPUT_GET, 'term_id', FILTER_VALIDATE_INT);
 
 if (!$term_id || $term_id <= 0 || !in_array($action, ['approve', 'decline'])) {
@@ -57,11 +59,8 @@ try {
     }
     $stmt_fetch_items->close();
 
-    if (empty($item_ids) && $action === 'approve') { // Declining might be ok if items somehow got deleted, but approving 0 items is weird.
-        // Or if items are mandatory for a term to exist. For now, let's allow decline, but flag approve.
+    if (empty($item_ids) && $action === 'approve') {
         error_log("Warning: Term ID {$term_id} has no associated items during approval attempt.");
-        // Depending on business rules, this could be an error:
-        // throw new Exception("Termo ID " . htmlspecialchars($term_id) . " não possui itens associados. Não pode ser aprovado.");
     }
 
 
@@ -88,7 +87,6 @@ try {
             if (!$stmt_update_items->execute()) {
                 throw new Exception("Falha ao atualizar status dos itens para 'Doado': " . $stmt_update_items->error);
             }
-            // We can check $stmt_update_items->affected_rows if needed
             $stmt_update_items->close();
         }
         $message = "Termo de doação ID " . htmlspecialchars($term_id) . " APROVADO com sucesso.";
@@ -122,15 +120,11 @@ try {
             $stmt_revert_items->close();
         }
 
-        // Attempt to delete signature file
         if (!empty($signature_file_relative_path)) {
-            // Path stored is relative to project root, e.g., "uploads/donation_signatures/..."
             $signature_file_full_path = __DIR__ . '/../' . $signature_file_relative_path;
             if (file_exists($signature_file_full_path)) {
                 if (!unlink($signature_file_full_path)) {
                     error_log("Falha ao excluir arquivo de assinatura: " . $signature_file_full_path . " para o termo ID " . $term_id);
-                    // Non-critical error, so we don't throw an exception to rollback DB changes.
-                    // $message .= " Aviso: Falha ao excluir arquivo de assinatura."; // Optionally inform user
                 }
             } else {
                  error_log("Arquivo de assinatura não encontrado para exclusão: " . $signature_file_full_path . " para o termo ID " . $term_id);
@@ -145,7 +139,7 @@ try {
 } catch (Exception $e) {
     $conn->rollback();
     error_log("Erro ao processar termo de doação ID " . $term_id . ": " . $e->getMessage());
-    $message = $e->getMessage(); // Use specific error from exception
+    $message = $e->getMessage();
     $success = false;
 } finally {
     $_SESSION['approval_action_message'] = $message;
