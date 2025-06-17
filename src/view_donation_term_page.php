@@ -2,31 +2,24 @@
 require_once 'auth.php'; // Includes start_secure_session()
 require_once 'db_connect.php';
 
-// Access Control: 'admin', 'admin-aprovador', or 'superAdmin'
-if (!isset($_SESSION['user_role']) || !in_array($_SESSION['user_role'], ['admin', 'admin-aprovador', 'superAdmin'])) {
-    $_SESSION['manage_donations_page_message'] = 'Você não tem permissão para acessar esta página.';
-    $_SESSION['manage_donations_page_message_type'] = 'error';
-    header('Location: home.php');
-    exit();
-}
+require_login(); // Allow any logged-in user to access this page initially
 
 $term_id = filter_input(INPUT_GET, 'term_id', FILTER_VALIDATE_INT);
-$context = strval($_GET['context'] ?? ''); // Retrieve context
+$context = strval($_GET['context'] ?? '');
 
 $term_data = null;
 $item_summary_text = 'Nenhum item associado ou erro ao carregar.';
 $page_error_message = '';
-$redirect_page_on_error = ($context === 'approval') ? '/admin/approve_donations_page.php' : '/manage_donations.php';
-
+$voltar_link = '/manage_terms.php'; // Simplified Voltar link
 
 if (!$term_id || $term_id <= 0) {
-    $_SESSION[($context === 'approval' ? 'approval_action_message' : 'manage_donations_page_message')] = 'ID do termo de doação inválido ou não fornecido.';
-    $_SESSION[($context === 'approval' ? 'approval_action_success' : 'manage_donations_page_message_type')] = ($context === 'approval' ? false : 'error');
-    header('Location: ' . $redirect_page_on_error);
+    $_SESSION['manage_terms_page_message'] = 'ID do termo de doação inválido ou não fornecido.';
+    $_SESSION['manage_terms_page_message_type'] = 'error';
+    header('Location: ' . $voltar_link);
     exit();
 }
 
-// Fetch donation term details - dt.* will include reproval_reason
+// Fetch donation term details
 $sql_term = "SELECT dt.*, u.username AS registered_by_username
              FROM donation_terms dt
              LEFT JOIN users u ON dt.user_id = u.id
@@ -39,12 +32,16 @@ if ($stmt_term) {
         $result_term = $stmt_term->get_result();
         if ($result_term->num_rows === 1) {
             $term_data = $result_term->fetch_assoc();
-            if ($context === 'approval' && $term_data['status'] !== 'Aguardando Aprovação') {
-                $page_error_message = "Este termo (ID: " . htmlspecialchars($term_id) . ") não está aguardando aprovação. Status: " . htmlspecialchars($term_data['status']) . ".";
-                $term_data = null;
-            } elseif ($context !== 'approval' && $term_data['status'] !== 'Doado' && $term_data['status'] !== 'Reprovado') {
-                $page_error_message = "Este termo (ID: " . htmlspecialchars($term_id) . ") não é um termo de doação finalizado (Doado/Reprovado). Status: " . htmlspecialchars($term_data['status']) . ".";
-                $term_data = null;
+
+            if ($context === 'approval') {
+                if ($term_data['status'] !== 'Aguardando Aprovação') {
+                    $page_error_message = "Este termo (ID: " . htmlspecialchars($term_id) . ") não está 'Aguardando Aprovação'. Status Atual: " . htmlspecialchars($term_data['status']) . ". Ações de aprovação não são aplicáveis.";
+                }
+            } else {
+                if (!in_array($term_data['status'], ['Doado', 'Reprovado', 'Aguardando Aprovação'])) {
+                    $page_error_message = "Status do termo inválido para visualização pública: " . htmlspecialchars($term_data['status']);
+                    $term_data = null;
+                }
             }
         } else {
             $page_error_message = "Termo de doação com ID " . htmlspecialchars($term_id) . " não encontrado.";
@@ -93,7 +90,7 @@ if ($term_data) {
     }
 }
 
-$voltar_link = ($context === 'approval') ? '/admin/approve_donations_page.php' : '/manage_donations.php';
+$can_approve_decline = (isset($_SESSION['user_role']) && ($_SESSION['user_role'] === 'superAdmin' || $_SESSION['user_role'] === 'admin-aprovador'));
 
 require_once 'templates/header.php';
 ?>
@@ -102,7 +99,7 @@ require_once 'templates/header.php';
     <?php if (!empty($page_error_message)): ?>
         <h2>Erro ao Visualizar Termo</h2>
         <p class="error-message"><?php echo htmlspecialchars($page_error_message); ?></p>
-        <p><a href="<?php echo $voltar_link; ?>" class="button-secondary">Voltar</a></p>
+        <p><a href="<?php echo $voltar_link; ?>" class="button-secondary">Voltar para Termos</a></p>
     <?php elseif ($term_data): ?>
         <h2>Termo de Doação - ID: <?php echo htmlspecialchars($term_data['term_id']); ?></h2>
 
@@ -123,7 +120,7 @@ require_once 'templates/header.php';
             </p>
             <p><strong>Responsável pela Doação (Sistema):</strong> <?php echo htmlspecialchars($term_data['responsible_donation']); ?></p>
             <p><strong>Registrado Por (Usuário):</strong> <?php echo htmlspecialchars($term_data['registered_by_username'] ?? 'N/A'); ?></p>
-            <p><strong>Status do Termo:</strong> <span class="status-<?php echo strtolower(htmlspecialchars($term_data['status'])); ?> status-tag"><?php echo htmlspecialchars($term_data['status']); ?></span></p>
+            <p><strong>Status do Termo:</strong> <span class="status-<?php echo strtolower(str_replace(' ', '-', htmlspecialchars($term_data['status']))); ?> status-tag"><?php echo htmlspecialchars($term_data['status']); ?></span></p>
         </div>
 
         <?php if ($term_data['status'] === 'Reprovado' && !empty(trim($term_data['reproval_reason']))): ?>
@@ -166,7 +163,7 @@ require_once 'templates/header.php';
             <img src="/<?php echo htmlspecialchars($term_data['signature_image_path']); ?>" alt="Assinatura do Recebedor" class="signature-image">
         </div>
 
-        <?php if ($context === 'approval' && $term_data['status'] === 'Aguardando Aprovação'): ?>
+        <?php if ($context === 'approval' && isset($term_data['status']) && $term_data['status'] === 'Aguardando Aprovação' && $can_approve_decline): ?>
         <div class="term-actions approval-actions no-print" style="margin-top: 20px; padding-top:20px; border-top: 1px solid #eee; display:flex; gap:10px; justify-content:center;">
             <a href="/admin/process_donation_approval_handler.php?action=approve&term_id=<?php echo htmlspecialchars($term_data['term_id']); ?>"
                class="button-primary"
@@ -176,19 +173,19 @@ require_once 'templates/header.php';
         <?php endif; ?>
 
         <div class="term-actions no-print" style="margin-top: 30px;">
-            <a href="<?php echo $voltar_link; ?>" class="button-secondary">Voltar</a>
+            <a href="<?php echo $voltar_link; ?>" class="button-secondary">Voltar para Termos</a>
             <button onclick="window.print();" class="button-primary">Imprimir Termo</button>
         </div>
 
     <?php else: ?>
         <?php
             if(empty($page_error_message)) {
-                 $page_error_message = "Não foi possível carregar os dados do termo de doação. Verifique se o ID é válido e tente novamente.";
+                 $page_error_message = "Não foi possível carregar os dados do termo de doação ou o status atual não permite a visualização neste contexto.";
             }
         ?>
          <h2>Erro ao Visualizar Termo</h2>
         <p class="error-message"><?php echo htmlspecialchars($page_error_message); ?></p>
-        <p><a href="<?php echo $voltar_link; ?>" class="button-secondary">Voltar</a></p>
+        <p><a href="<?php echo $voltar_link; ?>" class="button-secondary">Voltar para Termos</a></p>
     <?php endif; ?>
 </div>
 
@@ -236,9 +233,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const cancelReprovalButton = document.getElementById('cancelReprovalButton');
     const reprovalForm = document.getElementById('reprovalForm');
 
+    const currentTermIdForModal = '<?php echo htmlspecialchars($term_data['term_id'] ?? ''); ?>';
+    const hiddenTermIdInput = reprovalForm ? reprovalForm.querySelector('input[name="term_id"]') : null;
+
+    if (hiddenTermIdInput && currentTermIdForModal) {
+        hiddenTermIdInput.value = currentTermIdForModal;
+    }
+
     if (openModalButton && reprovalModal) {
         openModalButton.addEventListener('click', function() {
-            reprovalModal.style.display = 'block';
+            if (hiddenTermIdInput && hiddenTermIdInput.value) {
+                reprovalModal.style.display = 'block';
+            } else {
+                alert("Erro: ID do termo não definido para reprovação.");
+            }
         });
     }
     if (closeModalButton && reprovalModal) {

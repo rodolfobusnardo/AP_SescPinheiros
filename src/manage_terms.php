@@ -44,10 +44,9 @@ if (in_array($filter_status, ['Aguardando Aprovação', 'Doado', 'Reprovado'])) 
     $conditions_don[] = "dt.status = ?";
     $params_don[] = $filter_status;
     $types_don .= "s";
-} elseif ($filter_status === 'Devolvido') { // If filtering for "Devolvido", don't fetch donation terms
-    $conditions_don[] = "1=0"; // This will make the query return no results for donations
+} elseif ($filter_status === 'Devolvido') {
+    $conditions_don[] = "1=0";
 }
-// If $filter_status is empty, no status condition is added, fetching all donation terms.
 
 $sql_don_terms = $sql_don_terms_base;
 if (!empty($conditions_don)) {
@@ -73,20 +72,20 @@ if ($stmt_don_terms) {
                             GROUP BY c.name
                             ORDER BY c.name ASC";
 
-            $stmt_summary = $conn->prepare($sql_summary);
-            if ($stmt_summary) {
-                $stmt_summary->bind_param("i", $term['term_id']);
-                if ($stmt_summary->execute()) {
-                    $result_summary_items = $stmt_summary->get_result();
+            $stmt_summary_inner = $conn->prepare($sql_summary); // Use different var name for inner stmt
+            if ($stmt_summary_inner) {
+                $stmt_summary_inner->bind_param("i", $term['term_id']);
+                if ($stmt_summary_inner->execute()) {
+                    $result_summary_items = $stmt_summary_inner->get_result();
                     while ($summary_item = $result_summary_items->fetch_assoc()) {
                         $item_summary_parts[] = htmlspecialchars($summary_item['category_name']) . ": " . htmlspecialchars($summary_item['item_count']);
                     }
                     $term['item_summary_text'] = empty($item_summary_parts) ? 'Nenhum item encontrado.' : implode(', ', $item_summary_parts);
                 } else {
-                    error_log("Error executing item summary for donation term ID " . $term['term_id'] . " (manage_terms.php): " . $stmt_summary->error);
+                    error_log("Error executing item summary for donation term ID " . $term['term_id'] . " (manage_terms.php): " . $stmt_summary_inner->error);
                     $term['item_summary_text'] = 'Erro ao carregar resumo.';
                 }
-                $stmt_summary->close();
+                $stmt_summary_inner->close();
             } else {
                 error_log("Error preparing item summary for donation term ID " . $term['term_id'] . " (manage_terms.php): " . $conn->error);
                 $term['item_summary_text'] = 'Erro ao preparar resumo.';
@@ -162,13 +161,13 @@ require_once 'templates/header.php';
             </tbody>
         </table>
     <?php else: ?>
-        <p>Nenhum termo de devolução encontrado<?php if (!empty($filter_status)) echo " para o status selecionado"; ?>.</p>
+        <p>Nenhum termo de devolução encontrado<?php if (!empty($filter_status) && $filter_status === 'Devolvido') echo " para o status selecionado"; elseif(empty($filter_status)) echo "."; else echo "."; ?>.</p>
     <?php endif; ?>
     <?php endif; ?>
 
 
     <?php if ($filter_status === '' || in_array($filter_status, ['Aguardando Aprovação', 'Doado', 'Reprovado'])): ?>
-    <?php if ($filter_status === ''): ?> <hr> <?php endif; // Add HR only if both sections might show ?>
+    <?php if ($filter_status === ''): ?> <hr> <?php endif; ?>
     <h3>Termos de Doação</h3>
     <?php if (!empty($donation_terms_list)): ?>
         <table class="admin-table">
@@ -185,6 +184,17 @@ require_once 'templates/header.php';
             </thead>
             <tbody>
                 <?php foreach ($donation_terms_list as $term): ?>
+                    <?php
+                        $view_term_link = "view_donation_term_page.php?term_id=" . htmlspecialchars($term['term_id']);
+                        $button_text = "Ver Termo";
+                        if ($term['status'] === 'Aguardando Aprovação') {
+                            $view_term_link .= "&context=approval";
+                            // For users who can approve, the button text could be "Analisar"
+                            if (isset($_SESSION['user_role']) && ($_SESSION['user_role'] === 'superAdmin' || $_SESSION['user_role'] === 'admin-aprovador')) {
+                                $button_text = "Analisar Pendência";
+                            }
+                        }
+                    ?>
                     <tr>
                         <td><?php echo htmlspecialchars($term['term_id']); ?></td>
                         <td><?php echo htmlspecialchars(date('d/m/Y H:i:s', strtotime($term['term_creation_date']))); ?></td>
@@ -202,14 +212,14 @@ require_once 'templates/header.php';
                         <td><?php echo htmlspecialchars($term['registered_by_username'] ?? 'N/A'); ?></td>
                         <td><?php echo $term['item_summary_text']; ?></td>
                         <td class="actions-cell">
-                             <a href="view_donation_term_page.php?term_id=<?php echo htmlspecialchars($term['term_id']); ?>" class="button-secondary">Ver Termo</a>
+                             <a href="<?php echo $view_term_link; ?>" class="button-secondary"><?php echo $button_text; ?></a>
                         </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
     <?php else: ?>
-        <p>Nenhum termo de doação encontrado<?php if (!empty($filter_status)) echo " para o status selecionado"; ?>.</p>
+        <p>Nenhum termo de doação encontrado<?php if (!empty($filter_status) && in_array($filter_status, ['Aguardando Aprovação', 'Doado', 'Reprovado'])) echo " para o status selecionado"; elseif(empty($filter_status)) echo "."; else echo ".";?>.</p>
     <?php endif; ?>
     <?php endif; ?>
 

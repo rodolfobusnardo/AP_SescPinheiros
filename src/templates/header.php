@@ -60,12 +60,11 @@ $is_index_page = basename($_SERVER['PHP_SELF']) == 'index.php';
                 <?php if (is_super_admin()): ?>
                     <li><a href="/admin/manage_users.php">Usuários</a></li>
                     <li><a href="/admin/settings_page.php">Configurações</a></li>
-                    <li><a href="/admin/approve_donations_page.php">Aprovar Doações</a></li>
+                    <?php // Link to /admin/approve_donations_page.php removed ?>
                 <?php endif; ?>
                 <?php if (is_admin()): // This shows for admin, admin-aprovador, and superAdmin ?>
                     <li><a href="/admin/manage_categories.php">Categorias</a></li>
                     <li><a href="/admin/manage_locations.php">Locais</a></li>
-                    <?php // manage_devolutions.php and manage_donations.php links removed from here ?>
                 <?php endif; ?>
                 <?php if (is_logged_in()): ?>
                     <li><a href="/logout_handler.php">Sair (<?php echo htmlspecialchars($_SESSION['username'] ?? 'Usuário'); ?>)</a></li>
