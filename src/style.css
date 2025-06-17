@@ -71,14 +71,24 @@ form label {
 form input[type="text"],
 form input[type="password"],
 form input[type="date"],
+form input[type="time"], /* Added time for consistency */
 form select,
 form textarea {
     width: 100%;
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 5px;
-    box-sizing: border-box;
+    box-sizing: border-box; /* Important for consistent sizing */
 }
+
+/* Specific styling for readonly inputs to make them look less like editable fields */
+form input[readonly].form-control-readonly {
+    background-color: #e9ecef; /* Light grey background */
+    color: #495057; /* Darker text for readability */
+    cursor: default; /* Default cursor, not text selection */
+    border: 1px solid #ced4da; /* Standard border color */
+}
+
 
 form textarea {
     height: 100px;
@@ -201,10 +211,29 @@ footer {
     form input[type="text"],
     form input[type="password"],
     form input[type="date"],
+    form input[type="time"],
     form select,
     form textarea {
         font-size: 1em;
     }
+    .form-row {
+        flex-direction: column; /* Stack columns vertically on small screens */
+        gap: 0; /* Remove gap when stacked, rely on margin-bottom of form groups */
+    }
+    .form-row > .form-group_col,
+    .form-row > .form-group_col_small,
+    .form-row > .form-group_col_large,
+    .form-row > .form-group_col_full {
+        min-width: 100%; /* Make columns take full width when stacked */
+        margin-bottom: 15px; /* Add margin between stacked items */
+    }
+    .form-row > .form-group_col:last-child,
+    .form-row > .form-group_col_small:last-child,
+    .form-row > .form-group_col_large:last-child,
+    .form-row > .form-group_col_full:last-child {
+        margin-bottom: 0; /* Remove margin for the last item in a stacked row */
+    }
+
 }
 
 /* Specific container adjustments if needed */
@@ -258,18 +287,22 @@ a:hover {
 }
 
 /* Admin Forms */
-.admin-container form label {
+.admin-container form label { /* This is a repetition of the general form label, could be removed if identical */
     font-weight: bold;
 }
 
 .admin-container form input[type="text"],
 .admin-container form input[type="password"],
+.admin-container form input[type="date"], /* Added date for consistency */
+.admin-container form input[type="time"],  /* Added time for consistency */
 .admin-container form select {
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
 .admin-container form input[type="text"]:focus,
 .admin-container form input[type="password"]:focus,
+.admin-container form input[type="date"]:focus, /* Added date for consistency */
+.admin-container form input[type="time"]:focus,  /* Added time for consistency */
 .admin-container form select:focus {
     border-color: #007bff;
     outline: 0;
@@ -433,9 +466,9 @@ a:hover {
 }
 .filter-buttons button,
 .filter-buttons a {
-    padding: 5px 10px;     /* Explicit px padding */
-    font-size: 13px;       /* Explicit px font size */
-    line-height: 1.4;      /* Explicit line-height */
+    padding: 5px 10px;
+    font-size: 13px;
+    line-height: 1.4;
     margin: 0;
     border-radius: 4px;
     cursor: pointer;
@@ -472,20 +505,20 @@ a:hover {
 .button-secondary,
 .button-edit,
 .button-delete,
-.button-details { /* Combined base style for action buttons */
-    padding: 5px 10px;     /* Explicit px padding */
-    font-size: 13px;       /* Explicit px font size */
-    line-height: 1.4;      /* Explicit line-height */
+.button-details {
+    padding: 5px 10px;
+    font-size: 13px;
+    line-height: 1.4;
     border-radius: 4px;
     cursor: pointer;
     text-decoration: none;
     display: inline-block;
     vertical-align: middle;
     text-align: center;
-    margin:0;
+    margin:0; /* Reset margin if applied by other rules */
     box-sizing: border-box;
     border: 1px solid transparent;
-    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, transform 0.2s ease-in-out; /* Added transform transition */
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, transform 0.2s ease-in-out;
 }
 
 .button-primary {
@@ -535,7 +568,7 @@ a:hover {
 }
 
 .button-details {
-    background-color: #6c757d;
+    background-color: #6c757d; /* Same as secondary, can be specialized */
     color: white;
     border-color: #5a6268;
 }
@@ -572,7 +605,7 @@ a:hover {
 }
 
 /* Styles for Status Display */
-.item-status {
+.item-status, .status-tag { /* Added .status-tag for generic use */
     display: inline-block;
     padding: 3px 7px;
     border-radius: 4px;
@@ -580,100 +613,103 @@ a:hover {
     font-weight: bold;
     text-align: center;
     vertical-align: middle;
+    line-height: 1.3; /* Adjust for better vertical centering of text */
 }
 .status-pendente { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
 .status-devolvido { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-.status-doado { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+.status-doado { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; } /* Matched with Devolvido */
+.status-aguardando-aprovacao { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; } /* Neutral/Info style */
+.status-reprovado { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; } /* Error/Rejected style */
 
-/* Styles for Signature Pad (devolve_item_page.php) */
-.signature-pad-container {
+
+/* Styles for Signature Pad */
+.signature-pad-container { /* Used in devolution_item_page.php and generate_donation_term_page.php */
     border: 1px solid #ccc;
     max-width: 400px;
     margin-bottom: 10px;
     background-color: #fff;
+    position: relative; /* For canvas positioning if needed */
+    touch-action: none; /* Prevent page scroll on touch devices when drawing */
 }
-.signature-canvas {
+#signatureCanvas { /* Specifically target the canvas if it's directly styled */
     cursor: crosshair;
-    display: block;
-    width: 100%;
-    height: 200px;
+    display: block; /* Ensure it behaves as a block element */
+    width: 100%;   /* Make canvas responsive to its container's width */
+    height: 200px; /* Default height, JS might override for high DPI */
+    touch-action: none;
 }
 
-/* Styles for Detailed View Section (manage_devolutions.php) */
-.detailed-view-section {
-    margin-top: 30px;
-    padding: 20px;
-    border: 1px solid #e0e0e0;
-    background-color: #f9f9f9;
-    border-radius: 8px;
+
+/* Styles for Detailed View Section (e.g., manage_devolutions.php, view_donation_term_page.php) */
+.detailed-view-section, .view-term-container .term-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
 }
-.detailed-view-section h3,
+.detailed-view-section:last-child, .view-term-container .term-section:last-child {
+    border-bottom: none; /* Remove border for the last section */
+}
+
+.detailed-view-section h3, .view-term-container .term-section h3,
 .detailed-view-section h4 {
     color: #007bff;
-    margin-top: 15px;
+    margin-top: 0; /* Changed from 15px to 0 for sections */
     margin-bottom: 10px;
 }
-.detailed-view-section h4 {
+.detailed-view-section h4 { /* If h4 is used as sub-sub-heading */
     font-size: 1.15em;
     border-bottom: 1px solid #eee;
     padding-bottom: 8px;
 }
-.detailed-view-section p {
-    margin-bottom: 10px;
+.detailed-view-section p, .view-term-container p {
+    margin-bottom: 8px; /* Consistent paragraph spacing */
     line-height: 1.7;
 }
-.detailed-view-section strong {
+.detailed-view-section strong, .view-term-container strong {
     color: #333;
 }
-.signature-image {
+.signature-image { /* Used in manage_devolutions.php and view_donation_term_page.php */
     max-width: 100%;
-    width: 300px;
+    width: 350px; /* Slightly increased default max width */
     height: auto;
-    border: 1px solid #666;
+    border: 1px solid #ddd; /* Softened border */
     margin-top: 10px;
     display: block;
     background-color: #fff;
+    border-radius: 4px; /* Slight rounding */
 }
 
 /* Admin Tables Action Cell Alignment */
-/* General styling for action cells in admin tables */
 .admin-table td.actions-cell {
-    display: flex;         /* Lay out items in a row */
-    align-items: center;   /* Vertically center items in the cell */
-    gap: 8px;              /* Space between multiple buttons/forms in the cell */
-    flex-wrap: wrap;       /* Allow actions to wrap on smaller screens if needed */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-.admin-table td.actions-cell > form { /* This rule might need adjustment if it conflicts with the flex row main axis */
+.admin-table td.actions-cell > form {
     margin: 0;
-    /* display: flex; /* This might not be needed if form is a flex item */
-    /* align-items: center; /* This might not be needed if form is a flex item */
-    /* gap: 5px; /* This might not be needed if form is a flex item */
 }
 
 
 /* Specific Style for home.php's Action Cell (.home-actions-cell) */
+/* This might be too specific if .actions-cell general is enough */
 .admin-table td.home-actions-cell {
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* Align children (button, divs) to the start */
-    gap: 5px; /* Vertical spacing between Ver Descricao and the groups below */
+    align-items: flex-start;
+    gap: 5px;
 }
 
-/* Ensure action groups within home-actions-cell behave as intended */
 .home-actions-cell .action-group-inline,
 .home-actions-cell .action-group-centered {
-    width: auto; /* Allow these groups to size to their content */
+    width: auto;
 }
 
 .home-actions-cell > button.button-details-home {
-    width: auto; /* Ensure the "Ver Descricao" button itself doesn't stretch */
+    width: auto;
 }
 
-
-/* Specificity for buttons inside action cells, if needed beyond base class */
-/* This rule is now less critical as base button styles are more comprehensive */
-/* Keeping it for vertical-align and box-sizing assurance, and margin reset. */
 .admin-table td.actions-cell .button-details-home,
 .admin-table td.actions-cell .action-group-inline .button-edit,
 .admin-table td.actions-cell .action-group-inline .button-delete,
@@ -690,19 +726,13 @@ a:hover {
     padding-top: 6px;
     padding-bottom: 6px;
     font-size: 0.9em;
-    line-height: 1.4; /* Note: base buttons now use 1.5, this is a slight difference */
+    line-height: 1.4;
     vertical-align: middle;
 }
 .admin-table td.actions-cell .form-inline input[type="password"] {
      padding-left: 8px;
      padding-right: 8px;
 }
-
-
-/* Styles for the relocated "Ver Termo" button and its container cell */
-/* .admin-table td.status-actions-cell rule removed */
-/* .button-view-term and .button-view-term:hover rules removed */
-
 
 @media print {
     /* --- General Print Resets & Body --- */
@@ -711,113 +741,100 @@ a:hover {
         font-size: 12pt !important;
         color: #000 !important;
         background-color: #fff !important;
-        margin: 20pt !important;
+        margin: 20mm !important; /* Standard margin for A4 */
         padding: 0 !important;
+        -webkit-print-color-adjust: exact !important; /* Chrome, Safari */
+        print-color-adjust: exact !important; /* Standard */
     }
 
     /* --- Hide Non-Essential Page Elements --- */
-    header,
-    nav,
-    footer,
-    .filter-buttons button,
-    .filter-buttons a,
-    .action-bar,
-    .admin-table button,
-    .admin-table .button-edit,
-    .admin-table .button-delete,
+    header, nav, footer, .filter-buttons button, .filter-buttons a, .action-bar,
+    .admin-table button, .admin-table .button-edit, .admin-table .button-delete,
     .admin-table td.actions-cell > a.button-edit,
     .admin-table td.actions-cell > form button,
     .admin-table td.actions-cell .button-details-home,
-    .form-filters
+    .form-filters,
+    .form-action-buttons-group a.button-secondary, /* Hide "Cancelar" */
+    .form-action-buttons-group button.button-primary, /* Hide "Enviar para Aprovação" */
+    .term-actions.no-print /* Hide action buttons on view term page */
     {
         display: none !important;
     }
 
-    /* --- Styling for manage_devolutions.php when printing a specific term --- */
-    .container.admin-container > *:not(.detailed-view-section),
-    .container.admin-container > h2
-    {
-        display: none !important;
-    }
-
-    .detailed-view-section {
-        display: block !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        background-color: #fff !important;
-        font-size: 12pt !important;
-    }
-
-    .detailed-view-section h3,
-    .detailed-view-section h4 {
-        color: #000 !important;
-        margin-top: 1.2em;
-        margin-bottom: 0.8em;
-        padding-bottom: 0.2em;
-        border-bottom: 1px solid #ccc !important;
-        font-size: 14pt !important;
-    }
-    .detailed-view-section h3 {
-        font-size: 16pt !important;
-        text-align: center;
-    }
-     .detailed-view-section h5 {
-        color: #000 !important;
-        font-weight: bold !important;
-        text-align: center !important;
-        font-size: 13pt !important;
-        margin-top: 1em;
-        margin-bottom: 0.5em;
-    }
-
-
-    .detailed-view-section p {
-        font-size: 12pt !important;
-        line-height: 1.35 !important;
-        margin-bottom: 0.5em;
-    }
-
-    .detailed-view-section .term-separator {
-        color: #555 !important;
-        margin-left: 8px !important;
-        margin-right: 8px !important;
-    }
-
-    .detailed-view-section .devolution-declaration p {
-        font-size: 11pt !important;
-        text-align: justify;
-    }
-
-
-    .detailed-view-section .signature-image {
-        max-width: 250px !important;
-        height: auto;
-        border: 1px solid #333 !important;
-        margin-top: 10pt;
-    }
-
-    .detailed-view-section button,
-    .detailed-view-section a.button-secondary {
-        display: none !important;
-    }
-
-    .detailed-view-section a,
-    .detailed_view-section a:visited {
+    /* Ensure general links are black and not underlined for print */
+    a, a:visited {
         color: #000 !important;
         text-decoration: none !important;
     }
 
-    .container, .admin-container {
+    /* --- General Container and Table Styling for Print --- */
+    .container, .admin-container, .view-term-container {
         box-shadow: none !important;
         border: none !important;
-        width: auto !important;
+        width: 100% !important; /* Use full width */
         margin: 0 !important;
         padding: 0 !important;
+        background-color: #fff !important;
+    }
+
+    .admin-table {
+        width: 100% !important;
+        border: 1px solid #ccc !important; /* Light border for table */
+        margin-top: 1em !important;
+        margin-bottom: 1em !important;
+    }
+    .admin-table th, .admin-table td {
+        border: 1px solid #ddd !important;
+        padding: 6pt 8pt !important; /* Convert px to pt for print */
+        font-size: 10pt !important;
+        vertical-align: top; /* Align text to top for better readability in cells */
+    }
+    .admin-table th {
+        background-color: #eee !important; /* Light grey for headers */
+        color: #000 !important;
+        font-weight: bold !important;
+    }
+    .admin-table tr:nth-child(even) {
+        background-color: #fff !important; /* No alternating row color for print */
+    }
+
+    /* --- Specific Styling for Term View Pages (e.g., view_donation_term_page.php) for Print --- */
+    .view-term-container > h2 { /* Main title of the term */
+        text-align: center;
+        font-size: 16pt !important;
+        margin-bottom: 1.5em;
+    }
+    .view-term-container .term-section {
+        border-bottom: none !important; /* Remove dividers between sections for print */
+        page-break-inside: avoid;
+        margin-bottom: 1.2em;
+    }
+    .view-term-container .term-section h3 {
+        font-size: 14pt !important;
+        color: #000 !important;
+        border-bottom: 1px solid #aaa !important;
+        padding-bottom: 0.3em;
+        margin-bottom: 0.8em;
+    }
+    .view-term-container p {
+        font-size: 12pt !important;
+        line-height: 1.4 !important;
+        margin-bottom: 0.6em;
+    }
+    .view-term-container .signature-image {
+        max-width: 280px !important; /* Adjust size for print if needed */
+        border: 1px solid #666 !important;
+        margin-top: 1em;
+    }
+    /* Ensure status tags are printable */
+    .item-status, .status-tag {
+        border: 1px solid #999 !important; /* Ensure border prints */
+        color: #000 !important; /* Black text for all statuses */
+        background-color: #fff !important; /* No background color for print */
+        padding: 2pt 5pt !important;
     }
 }
+
 
 /* Action Group Styling for home.php actions-cell */
 .action-group-inline {
@@ -848,19 +865,17 @@ button.button-secondary:disabled {
     border-color: #bbb !important;
     color: #666 !important;
     box-shadow: none !important;
+    transform: none !important; /* No hover effect */
 }
 
-/* Ensure disabled links styled as buttons don't show hover effects if any */
 a.button-edit.disabled:hover,
 a.button-secondary.disabled:hover {
+    /* Keep styles same as disabled, no hover change */
     background-color: #ccc !important;
     color: #666 !important;
     text-decoration: none !important;
 }
 
-/* Styles for Compact Term Display in manage_devolutions.php detailed view */
-/* The duplicated block including Modal Styles and Button Details Style that followed this has been removed by this replacement */
-/* The margin-bottom rules for direct children of .actions-cell previously here were removed as 'gap' handles spacing. */
 
 /* Modal Styles */
 .modal {
@@ -877,23 +892,24 @@ a.button-secondary.disabled:hover {
 
 .modal-content {
     background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
+    margin: 10% auto; /* Adjusted margin for better centering */
+    padding: 25px;
     border: 1px solid #888;
-    width: 80%;
-    max-width: 500px;
+    width: 90%;
+    max-width: 550px; /* Slightly wider for more content */
     border-radius: 8px;
     position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
 .modal-close-button {
     color: #aaa;
     float: right;
-    font-size: 28px;
+    font-size: 30px; /* Slightly larger */
     font-weight: bold;
     position: absolute;
     top: 10px;
-    right: 20px;
+    right: 15px;
 }
 
 .modal-close-button:hover,
@@ -907,15 +923,107 @@ a.button-secondary.disabled:hover {
 .data-section-rounded {
     border: 1px solid #ddd;
     border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
+    padding: 20px; /* Increased padding */
+    margin-bottom: 25px; /* Increased margin */
     background-color: #f9f9f9;
 }
 
 .data-section-rounded legend {
     font-weight: bold;
-    color: #007bff; /* Bootstrap primary color */
-    padding: 0 5px; /* Add some horizontal padding around the legend text */
-    margin-left: 10px; /* Aligns legend text nicely if content inside fieldset also has padding */
-    /* font-size: 1.1em; /* Slightly larger legend text */
+    color: #007bff;
+    padding: 0 10px; /* Increased padding around legend */
+    margin-left: 10px;
+    font-size: 1.15em; /* Slightly larger legend */
+    /* To make legend appear "on the border" if desired, more complex CSS might be needed */
+}
+
+/* Form Layout Utilities */
+.form-row {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens if necessary */
+    gap: 20px; /* Increased space between columns in a row */
+    margin-bottom: 15px; /* Consistent margin like single form divs */
+}
+
+.form-group_col {
+    flex: 1; /* Each column takes equal space by default */
+    min-width: 150px; /* Minimum width before wrapping or shrinking too much */
+}
+
+.form-group_col_full { /* For elements that should take the full row width */
+    flex-basis: 100%;
+}
+
+.form-group_col_large { /* For elements that should take more space in a row */
+    flex: 2; /* Takes twice the space of a default .form-group_col */
+    min-width: 200px; /* Allow more space for larger fields */
+}
+
+.form-group_col_small { /* For elements that should take less space */
+    flex: 0.5; /* Takes half the space (adjust as needed, or use fixed widths) */
+    min-width: 100px; /* Example */
+}
+
+/* Ensure labels and inputs within these columns behave as expected */
+.form-group_col label,
+.form-group_col_full label,
+.form-group_col_large label,
+.form-group_col_small label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group_col input[type="text"],
+.form-group_col input[type="date"],
+.form-group_col input[type="time"],
+.form-group_col select,
+.form-group_col_full input[type="text"],
+.form-group_col_large input[type="text"],
+.form-group_col_small input[type="text"],
+.form-group_col_small input[type="date"],
+.form-group_col_small input[type="time"], /* Added time for small col */
+.form-group_col_small select {
+    width: 100%; /* Make inputs fill their column */
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+/* Ensure specific classes for input fields get applied if they were missed by the general rules above */
+.form-control { /* Assuming .form-control is used on inputs within these columns */
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+.form-control-readonly {
+     background-color: #e9ecef;
+     color: #495057;
+     cursor: default;
+     border: 1px solid #ced4da;
+}
+
+/* General container for form-modern, if needed for additional spacing or context */
+.form-modern {
+    /* Styles for the form itself, e.g., margin-top if not already handled by parent */
+}
+
+/* Styles for approval action buttons on view_donation_term_page.php */
+.approval-actions {
+    background-color: #f0f0f0; /* Light background to differentiate section */
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom:20px;
+    border-top: 1px solid #e0e0e0; /* Separator line */
+    display:flex;
+    gap:15px; /* Spacing between buttons */
+    justify-content:center; /* Center buttons in the container */
+}
+.approval-actions .button-primary,
+.approval-actions .button-delete {
+    font-size: 1em; /* Make buttons a bit larger */
+    padding: 10px 20px;
 }

@@ -10,10 +10,32 @@ if (!isset($_SESSION['user_role']) || ($_SESSION['user_role'] !== 'admin-aprovad
     exit();
 }
 
-// Validate action and term_id
-// Corrected FILTER_SANITIZE_STRING
-$action = strval($_GET['action'] ?? '');
-$term_id = filter_input(INPUT_GET, 'term_id', FILTER_VALIDATE_INT);
+// Use $_REQUEST to allow action/term_id from GET (for approve) or POST (for decline with reason)
+$action = strval($_REQUEST['action'] ?? '');
+$term_id = filter_var($_REQUEST['term_id'] ?? 0, FILTER_VALIDATE_INT);
+
+$reproval_reason = null;
+
+if ($action === 'decline') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        $_SESSION['approval_action_message'] = 'Ação de reprovação inválida (requer POST).';
+        $_SESSION['approval_action_success'] = false;
+        header('Location: approve_donations_page.php');
+        exit();
+    }
+    $reproval_reason = trim($_POST['reproval_reason'] ?? '');
+    if (empty($reproval_reason)) {
+        // This error should ideally be sent back to the view_donation_term_page with context
+        // For now, approve_donations_page.php will show it.
+        $_SESSION['approval_action_message'] = 'O motivo da reprovação é obrigatório.';
+        $_SESSION['approval_action_success'] = false;
+        // Consider redirecting back to view_donation_term_page if term_id is available
+        // header('Location: view_donation_term_page.php?term_id=' . $term_id . '&context=approval&error=reprovalreasonrequired');
+        header('Location: approve_donations_page.php'); // Simpler redirect for now
+        exit();
+    }
+}
+
 
 if (!$term_id || $term_id <= 0 || !in_array($action, ['approve', 'decline'])) {
     $_SESSION['approval_action_message'] = 'Ação inválida ou ID do termo não fornecido.';
@@ -65,7 +87,7 @@ try {
 
     if ($action === 'approve') {
         // Update donation_terms status to 'Doado'
-        $sql_update_term = "UPDATE donation_terms SET status = 'Doado' WHERE term_id = ?";
+        $sql_update_term = "UPDATE donation_terms SET status = 'Doado', reproval_reason = NULL WHERE term_id = ?"; // Clear reproval reason on approval
         $stmt_update_term = $conn->prepare($sql_update_term);
         if (!$stmt_update_term) throw new Exception("Erro ao preparar atualização do termo: " . $conn->error);
         $stmt_update_term->bind_param("i", $term_id);
@@ -92,17 +114,17 @@ try {
         $success = true;
 
     } elseif ($action === 'decline') {
-        $signature_file_relative_path = $term_data['signature_image_path'];
+        // $reproval_reason is already validated and retrieved if action is 'decline'
 
-        // Delete from donation_terms (items in donation_term_items are cascaded)
-        $sql_delete_term = "DELETE FROM donation_terms WHERE term_id = ?";
-        $stmt_delete_term = $conn->prepare($sql_delete_term);
-        if (!$stmt_delete_term) throw new Exception("Erro ao preparar exclusão do termo: " . $conn->error);
-        $stmt_delete_term->bind_param("i", $term_id);
-        if (!$stmt_delete_term->execute() || $stmt_delete_term->affected_rows === 0) {
-            throw new Exception("Falha ao declinar o termo ID " . htmlspecialchars($term_id) . ". Nenhuma linha afetada ou erro: " . $stmt_delete_term->error);
+        // Update donation_terms status to 'Reprovado' and store reproval_reason
+        $sql_update_term_status = "UPDATE donation_terms SET status = 'Reprovado', reproval_reason = ? WHERE term_id = ?";
+        $stmt_update_term_status = $conn->prepare($sql_update_term_status);
+        if (!$stmt_update_term_status) throw new Exception("Erro ao preparar atualização do status do termo para Reprovado: " . $conn->error);
+        $stmt_update_term_status->bind_param("si", $reproval_reason, $term_id);
+        if (!$stmt_update_term_status->execute() || $stmt_update_term_status->affected_rows === 0) {
+            throw new Exception("Falha ao reprovar o termo ID " . htmlspecialchars($term_id) . " (status não atualizado): " . $stmt_update_term_status->error);
         }
-        $stmt_delete_term->close();
+        $stmt_update_term_status->close();
 
         // Update items status back to 'Pendente'
         if (!empty($item_ids)) {
@@ -119,17 +141,7 @@ try {
             $stmt_revert_items->close();
         }
 
-        if (!empty($signature_file_relative_path)) {
-            $signature_file_full_path = __DIR__ . '/../' . $signature_file_relative_path;
-            if (file_exists($signature_file_full_path)) {
-                if (!unlink($signature_file_full_path)) {
-                    error_log("Falha ao excluir arquivo de assinatura: " . $signature_file_full_path . " para o termo ID " . $term_id);
-                }
-            } else {
-                 error_log("Arquivo de assinatura não encontrado para exclusão: " . $signature_file_full_path . " para o termo ID " . $term_id);
-            }
-        }
-        $message = "Termo de doação ID " . htmlspecialchars($term_id) . " RECUSADO com sucesso.";
+        $message = "Termo de doação ID " . htmlspecialchars($term_id) . " REPROVADO com sucesso. Motivo: " . htmlspecialchars($reproval_reason);
         $success = true;
     }
 

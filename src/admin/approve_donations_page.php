@@ -103,14 +103,8 @@ require_once '../templates/header.php';
                         <td><?php echo htmlspecialchars($term['institution_name']); ?></td>
                         <td><?php echo $term['item_summary_text']; // Already htmlspecialchars'd during creation ?></td>
                         <td class="actions-cell">
-                            <a href="process_donation_approval_handler.php?action=approve&term_id=<?php echo $term['term_id']; ?>"
-                               class="button-primary"
-                               onclick="return confirm('Tem certeza que deseja APROVAR este termo de doação?');">Aprovar</a>
-                            <a href="process_donation_approval_handler.php?action=decline&term_id=<?php echo $term['term_id']; ?>"
-                               class="button-delete"
-                               onclick="return confirm('Tem certeza que deseja DECLINAR este termo de doação? Esta ação não poderá ser desfeita.');">Declinar</a>
-                            <!-- Optional: View Details Link -->
-                            <!-- <a href="view_donation_term_page.php?term_id=<?php echo $term['term_id']; ?>" class="button-secondary">Ver Detalhes</a> -->
+                            <a href="view_donation_term_page.php?term_id=<?php echo htmlspecialchars($term['term_id']); ?>&context=approval"
+                               class="button-secondary">Analisar Doação</a>
                         </td>
                     </tr>
                 <?php endforeach; ?>
