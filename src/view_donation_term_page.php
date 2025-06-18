@@ -165,7 +165,7 @@ require_once 'templates/header.php';
 
         <?php if ($context === 'approval' && isset($term_data['status']) && $term_data['status'] === 'Aguardando Aprovação' && $can_approve_decline): ?>
         <div class="term-actions approval-actions no-print" style="margin-top: 20px; padding-top:20px; border-top: 1px solid #eee; display:flex; gap:10px; justify-content:center;">
-            <a href="/admin/process_donation_approval_handler.php?action=approve&term_id=<?php echo htmlspecialchars($term_data['term_id']); ?>"
+            <a href="/src/admin/process_donation_approval_handler.php?action=approve&term_id=<?php echo htmlspecialchars($term_data['term_id']); ?>"
                class="button-primary"
                onclick="return confirm('Tem certeza que deseja APROVAR este termo de doação?');">Aprovar Termo</a>
             <button type="button" id="openReprovalModalButton" class="button-delete">Reprovar Termo</button>
@@ -194,7 +194,7 @@ require_once 'templates/header.php';
     <div class="modal-content">
         <span class="modal-close-button" id="closeReprovalModal">&times;</span>
         <h3>Reprovar Termo de Doação</h3>
-        <form id="reprovalForm" action="/admin/process_donation_approval_handler.php" method="POST">
+        <form id="reprovalForm" action="/src/admin/process_donation_approval_handler.php" method="POST">
             <input type="hidden" name="action" value="decline">
             <input type="hidden" name="term_id" value="<?php echo htmlspecialchars($term_data['term_id'] ?? ''); ?>">
             <div>

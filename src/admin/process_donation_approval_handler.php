@@ -25,13 +25,9 @@ if ($action === 'decline') {
     }
     $reproval_reason = trim($_POST['reproval_reason'] ?? '');
     if (empty($reproval_reason)) {
-        // This error should ideally be sent back to the view_donation_term_page with context
-        // For now, approve_donations_page.php will show it.
         $_SESSION['approval_action_message'] = 'O motivo da reprovação é obrigatório.';
         $_SESSION['approval_action_success'] = false;
-        // Consider redirecting back to view_donation_term_page if term_id is available
-        // header('Location: view_donation_term_page.php?term_id=' . $term_id . '&context=approval&error=reprovalreasonrequired');
-        header('Location: approve_donations_page.php'); // Simpler redirect for now
+        header('Location: approve_donations_page.php');
         exit();
     }
 }
@@ -80,6 +76,9 @@ try {
     }
     $stmt_fetch_items->close();
 
+    error_log("Processing Term ID: $term_id - Action: $action - Fetched item IDs for status update: " . print_r($item_ids, true));
+
+
     if (empty($item_ids) && $action === 'approve') {
         error_log("Warning: Term ID {$term_id} has no associated items during approval attempt.");
     }
@@ -87,7 +86,7 @@ try {
 
     if ($action === 'approve') {
         // Update donation_terms status to 'Doado'
-        $sql_update_term = "UPDATE donation_terms SET status = 'Doado', reproval_reason = NULL WHERE term_id = ?"; // Clear reproval reason on approval
+        $sql_update_term = "UPDATE donation_terms SET status = 'Doado', reproval_reason = NULL WHERE term_id = ?";
         $stmt_update_term = $conn->prepare($sql_update_term);
         if (!$stmt_update_term) throw new Exception("Erro ao preparar atualização do termo: " . $conn->error);
         $stmt_update_term->bind_param("i", $term_id);
@@ -96,7 +95,6 @@ try {
         }
         $stmt_update_term->close();
 
-        // Update items status to 'Doado'
         if (!empty($item_ids)) {
             $item_placeholders = implode(',', array_fill(0, count($item_ids), '?'));
             $sql_update_items = "UPDATE items SET status = 'Doado' WHERE id IN ($item_placeholders)";
@@ -108,15 +106,14 @@ try {
             if (!$stmt_update_items->execute()) {
                 throw new Exception("Falha ao atualizar status dos itens para 'Doado': " . $stmt_update_items->error);
             }
+            error_log("Term ID: $term_id - Approve action - Item update SQL: " . $sql_update_items);
+            error_log("Term ID: $term_id - Approve action - Affected rows for item status update to 'Doado': " . $stmt_update_items->affected_rows);
             $stmt_update_items->close();
         }
         $message = "Termo de doação ID " . htmlspecialchars($term_id) . " APROVADO com sucesso.";
         $success = true;
 
     } elseif ($action === 'decline') {
-        // $reproval_reason is already validated and retrieved if action is 'decline'
-
-        // Update donation_terms status to 'Reprovado' and store reproval_reason
         $sql_update_term_status = "UPDATE donation_terms SET status = 'Reprovado', reproval_reason = ? WHERE term_id = ?";
         $stmt_update_term_status = $conn->prepare($sql_update_term_status);
         if (!$stmt_update_term_status) throw new Exception("Erro ao preparar atualização do status do termo para Reprovado: " . $conn->error);
@@ -126,7 +123,6 @@ try {
         }
         $stmt_update_term_status->close();
 
-        // Update items status back to 'Pendente'
         if (!empty($item_ids)) {
             $item_placeholders = implode(',', array_fill(0, count($item_ids), '?'));
             $sql_revert_items = "UPDATE items SET status = 'Pendente' WHERE id IN ($item_placeholders)";
@@ -138,6 +134,8 @@ try {
             if (!$stmt_revert_items->execute()) {
                 throw new Exception("Falha ao reverter status dos itens para 'Pendente': " . $stmt_revert_items->error);
             }
+            error_log("Term ID: $term_id - Decline action - Item revert SQL: " . $sql_revert_items);
+            error_log("Term ID: $term_id - Decline action - Affected rows for item status update to 'Pendente': " . $stmt_revert_items->affected_rows);
             $stmt_revert_items->close();
         }
 
