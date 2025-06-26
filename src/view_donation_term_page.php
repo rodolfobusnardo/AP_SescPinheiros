@@ -175,7 +175,9 @@ require_once 'templates/header.php';
 
         <div class="term-actions no-print" style="margin-top: 30px;">
             <a href="<?php echo $voltar_link; ?>" class="button-secondary">Voltar para Termos</a>
-            <button onclick="window.print();" class="button-primary">Imprimir Termo</button>
+            <?php if ($term_data && $term_data['status'] !== 'Reprovado'): ?>
+                <button onclick="window.print();" class="button-primary">Imprimir Termo</button>
+            <?php endif; ?>
         </div>
 
     <?php else: ?>
