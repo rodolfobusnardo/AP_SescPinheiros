@@ -2,7 +2,7 @@
 // File: src/admin/manage_locations.php
 require_once '../auth.php';
 require_once '../db_connect.php';
-
+header('Content-Type: text/html; charset=utf-8');
 start_secure_session();
 require_admin('../index.php');
 

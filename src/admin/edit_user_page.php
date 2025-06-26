@@ -18,7 +18,7 @@ if (!$user_id_to_edit) {
 }
 
 // Fetch current user data
-$sql_user = "SELECT id, username, role FROM users WHERE id = ?";
+$sql_user = "SELECT id, username, full_name, role FROM users WHERE id = ?"; // Added full_name
 $stmt_user = $conn->prepare($sql_user);
 
 if ($stmt_user) {
@@ -56,17 +56,22 @@ require_once '../templates/header.php';
         $error_key = $_GET['error'];
          // Use the same error message array from manage_users.php or define specific ones
         $error_messages = [
-            'emptyfields_edituser' => 'Nome de usuário e função são obrigatórios.',
+            'emptyfields_edituser' => 'Nome de usuário e função são obrigatórios.', // Mensagem genérica antiga
+            'emptyfields_edituser_fullname' => 'Todos os campos (Usuário, Nome Completo, Função) são obrigatórios.', // Nova do handler
             'usernametoolong_edituser' => 'Nome de usuário muito longo (máx 255).',
             'usernametooshort_edituser' => 'Nome de usuário muito curto (mín 3).',
-            'sqlerror_fetchuser' => 'Erro ao buscar dados do usuário para edição.', // Should not happen here if already fetched
-            'usernotfound_edit' => 'Usuário não encontrado para edição.', // Should not happen here
+            'fullname_too_long_edituser' => 'Nome Completo não pode exceder 255 caracteres.', // Nova do handler
+            'sqlerror_fetchuser' => 'Erro ao buscar dados do usuário para edição.',
+            'usernotfound_edit' => 'Usuário não encontrado para edição.',
             'cannotrenameadmin' => 'O nome de usuário do administrador principal não pode ser alterado.',
             'cannotchangeroleadmin' => 'A função do administrador principal não pode ser alterada.',
             'usernameexists_edit' => 'Erro ao atualizar: Nome de usuário já em uso por outro usuário.',
             'sqlerror_updateuser' => 'Erro de banco de dados ao atualizar usuário.',
             'updateuserfailed' => 'Falha ao atualizar o usuário.',
+            'invalidrole_edit' => 'Função inválida selecionada.', // Adicionada para consistência com handler
         ];
+        // O handler também pode definir $_SESSION['page_error_message'], que é exibido depois.
+        // Esta seção lida com erros passados via ?error=...
         $display_message = $error_messages[$error_key] ?? 'Ocorreu um erro desconhecido ao tentar atualizar.';
         echo '<p class="error-message">' . htmlspecialchars($display_message) . '</p>';
     }
@@ -76,34 +81,55 @@ require_once '../templates/header.php';
     ?>
 
     <?php if ($user_data): // Should always be true if we haven't exited ?>
-    <form action="user_management_handler.php" method="POST" class="form-admin">
+    <form action="user_management_handler.php" method="POST" class="form-admin form-modern">
         <input type="hidden" name="action" value="edit_user">
         <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user_data['id']); ?>">
 
-        <div>
-            <label for="username">Nome de Usuário:</label>
-            <input type="text" id="username" name="username"
-                   value="<?php echo htmlspecialchars($user_data['username']); ?>"
-                   <?php if ($user_data['username'] === 'admin') echo 'readonly'; ?>
-                   required minlength="3" maxlength="255">
-            <?php if ($user_data['username'] === 'admin'): ?>
-                <small class="form-text text-muted">O nome de usuário 'admin' não pode ser alterado.</small>
-            <?php endif; ?>
+        <div class="form-row">
+            <div class="form-group_col">
+                <label for="username">Nome de Usuário (Login):</label>
+                <input type="text" id="username" name="username" class="form-control"
+                       value="<?php echo htmlspecialchars($user_data['username']); ?>"
+                       <?php if ($user_data['username'] === 'admin') echo 'readonly class="form-control-readonly"'; else echo 'class="form-control"'; ?>
+                       required minlength="3" maxlength="255">
+                <?php if ($user_data['username'] === 'admin'): ?>
+                    <small class="form-text text-muted">O nome de usuário 'admin' não pode ser alterado.</small>
+                <?php endif; ?>
+            </div>
+            <div class="form-group_col">
+                <label for="full_name">Nome Completo:</label>
+                <input type="text" id="full_name" name="full_name" class="form-control"
+                       value="<?php echo htmlspecialchars($user_data['full_name'] ?? ''); ?>" required>
+            </div>
         </div>
 
-        <div>
-            <label for="role">Função:</label>
-            <?php $is_main_admin_user = ($user_data['username'] === 'admin'); ?>
-            <select id="role" name="role" <?php if ($is_main_admin_user) echo 'disabled'; ?> required>
-                <option value="common" <?php if ($user_data['role'] === 'common') echo 'selected'; ?>>Comum</option>
-                <option value="admin" <?php if ($user_data['role'] === 'admin') echo 'selected'; ?>>Admin</option>
-                <option value="superAdmin" <?php if ($user_data['role'] === 'superAdmin') echo 'selected'; ?>>SuperAdmin</option>
-            </select>
-            <?php if ($is_main_admin_user): ?>
-                <input type="hidden" name="role" value="<?php echo htmlspecialchars($user_data['role']); ?>">
-                <small class="form-text text-muted">A função do usuário 'admin' não pode ser alterada.</small>
-            <?php endif; ?>
+        <div class="form-row">
+            <div class="form-group_col">
+                <label for="role">Função:</label>
+                <?php $is_main_admin_user = ($user_data['username'] === 'admin'); ?>
+                <select id="role" name="role" class="form-control" <?php if ($is_main_admin_user) echo 'disabled'; ?> required>
+                    <option value="common" <?php if ($user_data['role'] === 'common') echo 'selected'; ?>>Comum</option>
+                    <option value="admin" <?php if ($user_data['role'] === 'admin') echo 'selected'; ?>>Admin</option>
+                    <option value="admin-aprovador" <?php if ($user_data['role'] === 'admin-aprovador') echo 'selected'; ?>>Admin Aprovador</option>
+                    <option value="superAdmin" <?php if ($user_data['role'] === 'superAdmin') echo 'selected'; ?>>SuperAdmin</option>
+                </select>
+                <?php if ($is_main_admin_user): ?>
+                    <input type="hidden" name="role" value="<?php echo htmlspecialchars($user_data['role']); ?>">
+                    <small class="form-text text-muted">A função do usuário 'admin' não pode ser alterada.</small>
+                <?php endif; ?>
+            </div>
+            <div class="form-group_col">
+                <?php // Espaço reservado para um futuro segundo campo nesta linha ?>
+            </div>
         </div>
+
+        <!-- REMOVED Checkbox for is_donation_approver -->
+        <!--
+        <div>
+            <input type="checkbox" id="is_donation_approver" name="is_donation_approver" value="1" <?php if (!empty($user_data['is_donation_approver']) && $user_data['is_donation_approver'] == 1) echo 'checked'; ?>>
+            <label for="is_donation_approver">Aprovador de Doações</label>
+        </div>
+        -->
 
         <div style="margin-top: 10px;">
             <p><small>A alteração de senha é realizada através da funcionalidade "Resetar Senha" na página de listagem de usuários.</small></p>
@@ -115,7 +141,6 @@ require_once '../templates/header.php';
         </div>
     </form>
     <?php else: ?>
-        <?php // This part should ideally not be reached if redirects for invalid user work correctly ?>
         <p class="error-message">Não foi possível carregar os dados do usuário para edição.</p>
         <p><a href="manage_users.php">Voltar para a lista de usuários</a></p>
     <?php endif; ?>
@@ -123,7 +148,7 @@ require_once '../templates/header.php';
 
 <?php
 if (isset($conn) && $conn instanceof mysqli) {
-    // $conn->close(); // Usually closed by PHP or footer
+    // $conn->close();
 }
 require_once '../templates/footer.php';
 ?>

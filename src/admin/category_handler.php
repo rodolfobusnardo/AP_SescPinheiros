@@ -1,4 +1,5 @@
 <?php
+mb_internal_encoding('UTF-8'); // Set internal encoding for mb_string functions
 header('Content-Type: application/json'); // Default content type for get_category responses
 require_once '../auth.php';
 require_once '../db_connect.php';
@@ -22,15 +23,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             header('Location: manage_categories.php?error=emptyfields_addcat');
             exit();
         }
-        if (strlen($name) > 255) {
+        if (mb_strlen($name) > 255) {
             header('Location: manage_categories.php?error=catname_too_long');
             exit();
         }
-        if (strlen($name) < 3) {
+        if (mb_strlen($name) < 3) {
             header('Location: manage_categories.php?error=catname_too_short');
             exit();
         }
-        if (strlen($code) > 10) {
+        if (mb_strlen($code) > 10) { // Though code is typically ASCII, using mb_strlen for consistency
              header('Location: manage_categories.php?error=code_too_long');
              exit();
         }
@@ -72,15 +73,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             header('Location: manage_categories.php?error=emptyfields_editcat&id=' . $id);
             exit();
         }
-        if (strlen($name) > 255) {
+        if (mb_strlen($name) > 255) {
             header('Location: manage_categories.php?error=catname_too_long_edit&id=' . $id);
             exit();
         }
-        if (strlen($name) < 3) {
+        if (mb_strlen($name) < 3) {
             header('Location: manage_categories.php?error=catname_too_short_edit&id=' . $id);
             exit();
         }
-        if (strlen($code) > 10) {
+        if (mb_strlen($code) > 10) { // Though code is typically ASCII, using mb_strlen for consistency
              header('Location: manage_categories.php?error=code_too_long_edit&id=' . $id);
              exit();
         }
@@ -147,6 +148,53 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     }
     $stmt->close();
     echo json_encode($response);
+    exit();
+
+} elseif ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['action']) && $_GET['action'] == 'delete_category') {
+    // Although this is a GET request for simplicity in the link,
+    // destructive actions should ideally be POST with CSRF protection.
+    // For this context, we'll proceed with GET but acknowledge this.
+    require_admin('../index.php', 'Acesso negado. Funcionalidade administrativa.'); // Ensure admin for delete
+
+    $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+
+    if (!$id) {
+        header('Location: manage_categories.php?error=invalid_id_delete');
+        exit();
+    }
+
+    // Check if the category is in use by any item
+    $sql_check_usage = "SELECT COUNT(*) as count FROM items WHERE category_id = ?";
+    $stmt_check_usage = $conn->prepare($sql_check_usage);
+    $stmt_check_usage->bind_param("i", $id);
+    $stmt_check_usage->execute();
+    $result_usage = $stmt_check_usage->get_result();
+    $usage_count = $result_usage->fetch_assoc()['count'];
+    $stmt_check_usage->close();
+
+    if ($usage_count > 0) {
+        header('Location: manage_categories.php?error=cat_in_use&id=' . $id);
+        exit();
+    }
+
+    // Proceed with deletion
+    $sql_delete = "DELETE FROM categories WHERE id = ?";
+    $stmt_delete = $conn->prepare($sql_delete);
+    $stmt_delete->bind_param("i", $id);
+
+    if ($stmt_delete->execute()) {
+        if ($stmt_delete->affected_rows > 0) {
+            header('Location: manage_categories.php?success=cat_deleted');
+        } else {
+            // ID not found, though ideally, this check might be redundant
+            // if UI only shows valid IDs.
+            header('Location: manage_categories.php?error=cat_not_found_delete&id=' . $id);
+        }
+    } else {
+        error_log("SQL Error (delete_category): " . $stmt_delete->error);
+        header('Location: manage_categories.php?error=delete_cat_failed&id=' . $id);
+    }
+    $stmt_delete->close();
     exit();
 
 } else {

@@ -25,6 +25,7 @@ $sql_base = "SELECT
                 c.name AS category_name, c.code AS category_code,
                 l.name AS location_name,
                 u.username AS registered_by_username,
+                u.full_name AS registered_by_full_name, /* Adicionado full_name do usuário */
                 dd.id AS devolution_document_id
              FROM items i
              JOIN categories c ON i.category_id = c.id
@@ -135,11 +136,11 @@ if ($stmt === false) {
 // If this script is accessed via AJAX, output JSON and exit.
 // (e.g., from home.php dynamic filtering)
 if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json'); // Moved here
     echo json_encode($items);
     exit();
 }
 
 // Otherwise, the $items array is populated and available to the including PHP script.
+// Ensure no whitespace after the closing tag
 ?>
-

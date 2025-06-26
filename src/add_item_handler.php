@@ -1,4 +1,5 @@
 <?php
+mb_internal_encoding('UTF-8'); // Set internal encoding for mb_string functions
 require_once 'auth.php'; // Includes session_start() via start_secure_session()
 require_once 'db_connect.php';
 
@@ -23,16 +24,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Additional validation: name length
-    if (strlen($name) > 255) {
+    if (mb_strlen($name) > 255) {
         header('Location: register_item_page.php?error=nametoolong');
         exit();
     }
-    if (strlen($name) < 3) {
+    if (mb_strlen($name) < 3) {
         header('Location: register_item_page.php?error=nametooshort');
         exit();
     }
     // Description length (TEXT can be large, but a practical limit is good)
-    if (strlen($description) > 1000) { // Example limit for description
+    if ($description !== null && mb_strlen($description) > 1000) { // Example limit for description
         header('Location: register_item_page.php?error=descriptiontoolong');
         exit();
     }

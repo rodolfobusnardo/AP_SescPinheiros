@@ -16,10 +16,14 @@ services:
       MYSQL_DATABASE: lost_and_found_db
       MYSQL_USER: user
       MYSQL_PASSWORD: password
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
     ports:
       - "3608:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./db_init:/docker-entrypoint-initdb.d
+      - ./config/mysql/charset-defaults.cnf:/etc/mysql/conf.d/charset-defaults.cnf
 volumes:
   db_data:

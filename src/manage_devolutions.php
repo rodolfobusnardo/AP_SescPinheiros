@@ -46,8 +46,10 @@ if (isset($_GET['view_id'])) {
                             i.found_date as item_found_date,
                             cat.name as item_category_name,
                             loc.name as item_location_name,
-                            reg_user.username as item_registered_by_username, /* User who registered the item */
-                            resp_user.username as responsible_user_name /* User who processed devolution */
+                            reg_user.username as item_registered_by_username,
+                            reg_user.full_name as item_registered_by_full_name, /* User who registered the item */
+                            resp_user.username as responsible_user_name,
+                            resp_user.full_name as responsible_user_full_name /* User who processed devolution */
                        FROM devolution_documents dd
                        JOIN items i ON dd.item_id = i.id
                        JOIN users resp_user ON dd.returned_by_user_id = resp_user.id
@@ -75,7 +77,7 @@ if (isset($_GET['view_id'])) {
     }
 } else { // Not in detail view mode, so fetch list and filter users
     // Fetch system_users for filters
-    $sql_users_list = "SELECT id, username FROM users ORDER BY username ASC";
+        $sql_users_list = "SELECT id, username, full_name FROM users ORDER BY username ASC"; // Added full_name
     $result_sys_users = $conn->query($sql_users_list);
     if ($result_sys_users) {
         while ($row_su = $result_sys_users->fetch_assoc()) {
@@ -91,7 +93,8 @@ if (isset($_GET['view_id'])) {
                     dd.signature_image_path,
                     i.name as item_name,
                     i.barcode as item_barcode,
-                    u.username as responsible_user_name
+                    u.username as responsible_user_name,
+                    u.full_name as responsible_user_full_name
                  FROM devolution_documents dd
                  JOIN items i ON dd.item_id = i.id
                  JOIN users u ON dd.returned_by_user_id = u.id"; // ORDER BY will be added after conditions
@@ -202,8 +205,13 @@ require_once 'templates/header.php';
                     <select id="filter_user_id" name="filter_user_id">
                         <option value="">Todos</option>
                         <?php foreach ($system_users as $user_filter): ?>
+                            <?php
+                                $filter_display_name = !empty(trim($user_filter['full_name'] ?? ''))
+                                                       ? $user_filter['full_name'] . ' (' . $user_filter['username'] . ')'
+                                                       : $user_filter['username'];
+                            ?>
                             <option value="<?php echo htmlspecialchars($user_filter['id']); ?>" <?php echo (isset($_GET['filter_user_id']) && $_GET['filter_user_id'] == $user_filter['id']) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($user_filter['username']); ?>
+                                <?php echo htmlspecialchars($filter_display_name); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -246,7 +254,14 @@ require_once 'templates/header.php';
                     <td><?php echo htmlspecialchars($doc['item_name']); ?></td>
                     <td><?php echo htmlspecialchars($doc['item_barcode'] ?? 'N/A'); ?></td>
                     <td><?php echo htmlspecialchars($doc['owner_name']); ?></td>
-                    <td><?php echo htmlspecialchars($doc['responsible_user_name']); ?></td>
+                    <td>
+                        <?php
+                        $responsible_display_name_list = !empty(trim($doc['responsible_user_full_name'] ?? ''))
+                                                  ? $doc['responsible_user_full_name']
+                                                  : $doc['responsible_user_name'];
+                        echo htmlspecialchars($responsible_display_name_list ?? 'N/A');
+                        ?>
+                    </td>
                     <td>
                         <a href="manage_devolutions.php?view_id=<?php echo htmlspecialchars($doc['devolution_id']); ?>" class="button-secondary">Ver Termo</a>
                     </td>
@@ -276,11 +291,25 @@ require_once 'templates/header.php';
                 </p>
                 <p><strong>Data que foi Achado:</strong> <?php echo htmlspecialchars(date("d/m/Y", strtotime($detailed_document['item_found_date']))); ?></p>
                 <p><strong>Descrição Original:</strong> <?php echo nl2br(htmlspecialchars($detailed_document['item_description'] ?? 'N/A')); ?></p>
-                <p><strong>Registrado Originalmente por:</strong> <?php echo htmlspecialchars($detailed_document['item_registered_by_username'] ?? 'N/A'); ?></p>
+                <p><strong>Registrado Originalmente por:</strong>
+                    <?php
+                    $item_reg_display_name = !empty(trim($detailed_document['item_registered_by_full_name'] ?? ''))
+                                          ? $detailed_document['item_registered_by_full_name']
+                                          : $detailed_document['item_registered_by_username'];
+                    echo htmlspecialchars($item_reg_display_name ?? 'N/A');
+                    ?>
+                </p>
 
                 <h4>Dados da Devolução</h4>
                 <p class="compact-data-line">
-                    <span class="term-data-group"><strong class="term-label">Responsável:</strong> <span class="term-value"><?php echo htmlspecialchars($detailed_document['responsible_user_name']); ?></span></span>
+                    <span class="term-data-group"><strong class="term-label">Responsável:</strong> <span class="term-value">
+                        <?php
+                        $resp_display_name = !empty(trim($detailed_document['responsible_user_full_name'] ?? ''))
+                                              ? $detailed_document['responsible_user_full_name']
+                                              : $detailed_document['responsible_user_name'];
+                        echo htmlspecialchars($resp_display_name ?? 'N/A');
+                        ?>
+                    </span></span>
                     <span class="term-separator"> | </span>
                     <span class="term-data-group"><strong class="term-label">Data/Hora:</strong> <span class="term-value"><?php echo htmlspecialchars(date("d/m/Y H:i:s", strtotime($detailed_document['devolution_timestamp']))); ?></span></span>
                 </p>

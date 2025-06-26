@@ -1,4 +1,5 @@
 <?php
+mb_internal_encoding('UTF-8'); // Set internal encoding for mb_string functions
 require_once '../auth.php';
 require_once '../db_connect.php';
 
@@ -78,15 +79,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    if (strlen($name) > 255) {
+    if (mb_strlen($name) > 255) {
         header('Location: edit_item_page.php?id=' . $item_id . '&error=nametoolong_edititem');
         exit();
     }
-    if (strlen($name) < 3) {
+    if (mb_strlen($name) < 3) {
         header('Location: edit_item_page.php?id=' . $item_id . '&error=nametooshort_edititem');
         exit();
     }
-    if (strlen($description) > 1000) { // Example limit for description
+    if ($description !== null && mb_strlen($description) > 1000) { // Example limit for description
         header('Location: edit_item_page.php?id=' . $item_id . '&error=descriptiontoolong_edititem');
         exit();
     }

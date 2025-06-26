@@ -161,6 +161,7 @@ require_once '../templates/header.php';
         <label for="status">Status do Item:</label>
         <select id="status" name="status" required>
             <option value="Pendente" <?php echo (isset($item['status']) && $item['status'] == 'Pendente') ? 'selected' : ''; ?>>Pendente</option>
+            <option value="Aguardando Aprovação" <?php echo (isset($item['status']) && $item['status'] == 'Aguardando Aprovação') ? 'selected' : ''; ?>>Aguardando Aprovação</option>
             <option value="Devolvido" <?php echo (isset($item['status']) && $item['status'] == 'Devolvido') ? 'selected' : ''; ?>>Devolvido</option>
             <option value="Doado" <?php echo (isset($item['status']) && $item['status'] == 'Doado') ? 'selected' : ''; ?>>Doado</option>
         </select>

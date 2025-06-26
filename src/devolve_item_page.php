@@ -262,6 +262,40 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    const phoneInput = document.getElementById('owner_phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function (e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove all non-digits
+            let formattedValue = '';
+
+            if (value.length > 0) {
+                formattedValue = '(' + value.substring(0, 2);
+            }
+            if (value.length > 2) {
+                formattedValue += ') ' + value.substring(2, 7);
+            }
+            if (value.length > 7) {
+                formattedValue += '-' + value.substring(7, 11);
+            }
+
+            // If the user deletes characters, the logic above might leave trailing characters like "(" or ") "
+            // This part ensures that if the input is cleared or partially cleared, the formatting is adjusted.
+            if (value.length <= 2 && value.length > 0) {
+                // Only show "(XX"
+                formattedValue = '(' + value;
+            } else if (value.length === 0) {
+                formattedValue = '';
+            }
+
+            e.target.value = formattedValue;
+        });
+
+        // Set maxlength considering the mask: (XX) YYYYY-YYYY is 15 characters
+        // ( D D ) <space> N N N N N - N N N N
+        // 1 2 3 4    5    6 7 8 9 10 11 12 13 14 15
+        phoneInput.maxLength = 15;
+    }
 });
 </script>
 

@@ -31,6 +31,7 @@ require_once '../templates/header.php';
         $success_messages = [
             'cat_added' => 'Nova categoria adicionada com sucesso!',
             'cat_updated' => 'Categoria atualizada com sucesso!',
+            'cat_deleted' => 'Categoria excluída com sucesso!',
         ];
         if (isset($success_messages[$_GET['success']])) {
             echo '<p class="success-message">' . htmlspecialchars($success_messages[$_GET['success']]) . '</p>';
@@ -47,6 +48,10 @@ require_once '../templates/header.php';
             'cat_exists_edit' => 'Outra categoria com este Nome ou Código já existe.',
             'edit_cat_failed' => 'Falha ao atualizar categoria.',
             'invalid_action' => 'Ação inválida especificada.',
+            'invalid_id_delete' => 'ID inválido para exclusão.',
+            'cat_in_use' => 'Esta categoria está em uso e não pode ser excluída.',
+            'cat_not_found_delete' => 'Categoria não encontrada para exclusão.',
+            'delete_cat_failed' => 'Falha ao excluir categoria.',
         ];
         $error_key = $_GET['error'];
         $display_message = $error_messages[$error_key] ?? 'Ocorreu um erro desconhecido.';
@@ -107,6 +112,12 @@ require_once '../templates/header.php';
     <h3>Lista de Categorias</h3>
     <?php if (!empty($categories)): ?>
     <table class="admin-table">
+        <colgroup>
+            <col style="width: 50px;">  <!-- ID -->
+            <col style="width: auto;">  <!-- Nome -->
+            <col style="width: 120px;"> <!-- Código -->
+            <col style="width: 180px;"> <!-- Ações -->
+        </colgroup>
         <thead>
             <tr>
                 <th>ID</th>
@@ -121,8 +132,9 @@ require_once '../templates/header.php';
                 <td><?php echo htmlspecialchars($category['id']); ?></td>
                 <td><?php echo htmlspecialchars($category['name']); ?></td>
                 <td><?php echo htmlspecialchars($category['code']); ?></td>
-                <td class="actions-cell">
+                <td class="actions-cell category-actions-cell-override">
                     <button type="button" class="button-edit" onclick="populateEditCategoryForm(<?php echo htmlspecialchars($category['id']); ?>)">Editar</button>
+                    <button type="button" class="button-delete" onclick="confirmDeleteCategory(<?php echo htmlspecialchars($category['id']); ?>)">Excluir</button>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -158,6 +170,13 @@ function populateEditCategoryForm(categoryId) {
 function hideEditForm(formId) {
     document.getElementById(formId).style.display = 'none';
     document.getElementById('addCategorySection').style.display = 'block'; // Show add form again
+}
+
+function confirmDeleteCategory(categoryId) {
+    if (confirm('Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita.')) {
+        // Redirect to a handler or use fetch to delete
+        window.location.href = `category_handler.php?action=delete_category&id=${categoryId}`;
+    }
 }
 </script>
 

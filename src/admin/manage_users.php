@@ -8,7 +8,8 @@ require_super_admin('../index.php'); // Redirect to login if not logged in or no
 
 // Fetch all users for the list
 $users = [];
-$sql_users = "SELECT id, username, role FROM users ORDER BY username ASC";
+// Assuming full_name column exists or will be added to the users table
+$sql_users = "SELECT id, username, full_name, role FROM users ORDER BY username ASC";
 $result_users = $conn->query($sql_users);
 if ($result_users && $result_users->num_rows > 0) {
     while ($row = $result_users->fetch_assoc()) {
@@ -51,6 +52,7 @@ require_once '../templates/header.php';
             'passwordshort' => 'A senha deve ter pelo menos 6 caracteres.',
             'invalidrole' => 'Função inválida selecionada.',
             'usernameexists' => 'Este nome de usuário já existe.',
+            'fullname_toolong' => 'Nome completo muito longo (máx 255).', // Nova mensagem
             'sqlerror_adduser' => 'Erro de banco de dados ao adicionar usuário.',
             'adduserfailed' => 'Falha ao adicionar novo usuário.',
             // Reset password errors
@@ -97,25 +99,32 @@ require_once '../templates/header.php';
     ?>
 
     <h3>Registrar Novo Usuário</h3>
-    <form action="user_management_handler.php" method="POST" class="form-admin">
+    <form action="user_management_handler.php" method="POST" class="form-admin register-user-form">
         <input type="hidden" name="action" value="register_user">
-        <div>
-            <label for="username_reg">Usuário:</label>
-            <input type="text" id="username_reg" name="username" required>
+        <div class="form-fields-wrapper-2col">
+            <div class="form-field-group">
+                <label for="username_reg">Usuário:</label>
+                <input type="text" id="username_reg" name="username" required>
+            </div>
+            <div class="form-field-group">
+                <label for="full_name_reg">Nome Completo:</label>
+                <input type="text" id="full_name_reg" name="full_name" maxlength="255">
+            </div>
+            <div class="form-field-group">
+                <label for="password_reg">Senha (mín. 6 caracteres):</label>
+                <input type="password" id="password_reg" name="password" required minlength="6">
+            </div>
+            <div class="form-field-group">
+                <label for="role_reg">Função:</label>
+                <select id="role_reg" name="role" required>
+                    <option value="common">Comum</option>
+                    <option value="admin">Admin</option>
+                    <option value="admin-aprovador">Admin Aprovador</option>
+                    <option value="superAdmin">SuperAdmin</option>
+                </select>
+            </div>
         </div>
-        <div>
-            <label for="password_reg">Senha (mín. 6 caracteres):</label>
-            <input type="password" id="password_reg" name="password" required minlength="6">
-        </div>
-        <div>
-            <label for="role_reg">Função:</label>
-            <select id="role_reg" name="role" required>
-                <option value="common">Comum</option>
-                <option value="admin">Admin</option>
-                <option value="superAdmin">SuperAdmin</option>
-            </select>
-        </div>
-        <div>
+        <div class="form-submit-group">
             <button type="submit">Registrar Usuário</button>
         </div>
     </form>
@@ -129,6 +138,7 @@ require_once '../templates/header.php';
             <tr>
                 <th>ID</th>
                 <th>Usuário</th>
+                <th>Nome Completo</th>
                 <th>Função</th>
                 <th>Ações</th>
             </tr>
@@ -138,33 +148,36 @@ require_once '../templates/header.php';
             <tr>
                 <td><?php echo htmlspecialchars($user['id']); ?></td>
                 <td><?php echo htmlspecialchars($user['username']); ?></td>
+                <td><?php echo htmlspecialchars(!empty($user['full_name']) ? $user['full_name'] : 'N/A'); ?></td>
                 <td><?php echo htmlspecialchars($user['role']); ?></td>
-                <td class="actions-cell">
-                    <a href="edit_user_page.php?id=<?php echo htmlspecialchars($user['id']); ?>" class="button-edit">Editar</a>
+                <td class="actions-cell user-actions-cell">
+                    <div class="user-actions-content-wrapper">
+                        <a href="edit_user_page.php?id=<?php echo htmlspecialchars($user['id']); ?>" class="button-edit">Editar</a>
 
-                    <?php // Password reset form (kept separate for clarity or if styling differs significantly) ?>
-                    <?php if (!($user['username'] === 'admin' && $_SESSION['username'] !== 'admin')): // Prevent non-primary admin from changing primary admin's password here ?>
-                         <?php // Also, generally the primary admin might not want to reset their own password via this form. ?>
-                         <?php if ($user['username'] !== 'admin' || ($_SESSION['username'] === 'admin' && $user['id'] == $_SESSION['user_id'] ) ): // Admin can reset own, or any non-admin user ?>
-                            <form action="user_management_handler.php" method="POST" class="form-inline" onsubmit="return confirmPasswordReset(this);">
-                                <input type="hidden" name="action" value="reset_password">
-                                <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['id']); ?>">
-                                <label for="new_password_<?php echo $user['id']; ?>" class="sr-only">Nova Senha:</label>
-                                <input type="password" id="new_password_<?php echo $user['id']; ?>" name="new_password" placeholder="Nova Senha (mín. 6)" required minlength="6">
-                                <button type="submit" class="button-secondary">Resetar Senha</button>
-                            </form>
-                        <?php else: ?>
-                             <small><em>(Reset Indisponível)</em></small>
+                        <?php // Password reset form (kept separate for clarity or if styling differs significantly) ?>
+                        <?php if (!($user['username'] === 'admin' && $_SESSION['username'] !== 'admin')): // Prevent non-primary admin from changing primary admin's password here ?>
+                             <?php // Also, generally the primary admin might not want to reset their own password via this form. ?>
+                             <?php if ($user['username'] !== 'admin' || ($_SESSION['username'] === 'admin' && $user['id'] == $_SESSION['user_id'] ) ): // Admin can reset own, or any non-admin user ?>
+                                <form action="user_management_handler.php" method="POST" class="form-inline" onsubmit="return confirmPasswordReset(this);">
+                                    <input type="hidden" name="action" value="reset_password">
+                                    <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['id']); ?>">
+                                    <label for="new_password_<?php echo $user['id']; ?>" class="sr-only">Nova Senha:</label>
+                                    <input type="password" id="new_password_<?php echo $user['id']; ?>" name="new_password" placeholder="Nova Senha (mín. 6)" required minlength="6">
+                                    <button type="submit" class="button-secondary">Resetar</button>
+                                </form>
+                            <?php else: ?>
+                                 <small><em>(Reset Indisponível)</em></small>
+                            <?php endif; ?>
                         <?php endif; ?>
-                    <?php endif; ?>
 
-                    <?php if ($user['username'] !== 'admin' && $user['id'] != $_SESSION['user_id']): ?>
-                        <form action="user_management_handler.php" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.');">
-                            <input type="hidden" name="action" value="delete_user">
-                            <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['id']); ?>">
-                            <button type="submit" class="button-delete">Excluir</button>
-                        </form>
-                    <?php endif; ?>
+                        <?php if ($user['username'] !== 'admin' && $user['id'] != $_SESSION['user_id']): ?>
+                            <form action="user_management_handler.php" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.');">
+                                <input type="hidden" name="action" value="delete_user">
+                                <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($user['id']); ?>">
+                                <button type="submit" class="button-delete">Excluir</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
                 </td>
             </tr>
             <?php endforeach; ?>

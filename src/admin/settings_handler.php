@@ -22,14 +22,19 @@ $raw_endereco_cep = trim($_POST['endereco_cep'] ?? '');
 
 // --- Validation and Cleaning ---
 
-// CNPJ: Remove mask, validate length 14
+// CNPJ: Remove mask, validate length 14. Now mandatory.
 $cleaned_cnpj = preg_replace('/\D/', '', $raw_cnpj);
-if (!empty($raw_cnpj) && strlen($cleaned_cnpj) !== 14) {
+if (empty($cleaned_cnpj)) {
+    $_SESSION['settings_error_message'] = 'CNPJ é obrigatório.';
+    header('Location: settings_page.php?error=validation&field=cnpj');
+    exit();
+}
+if (strlen($cleaned_cnpj) !== 14) {
     $_SESSION['settings_error_message'] = 'CNPJ inválido. Deve conter 14 dígitos.';
     header('Location: settings_page.php?error=validation&field=cnpj');
     exit();
 }
-if (empty($raw_cnpj)) $cleaned_cnpj = null; // Store as NULL if submitted empty
+// No longer allowing $cleaned_cnpj = null if empty, as it's required.
 
 // CEP: Remove mask, validate length 8
 $cleaned_endereco_cep = preg_replace('/\D/', '', $raw_endereco_cep);

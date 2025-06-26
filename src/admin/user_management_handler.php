@@ -10,25 +10,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 
     switch ($action) {
         case 'register_user':
-            // ... (c�digo de registrar usu�rio como est�) ...
+            // ... (código de registrar usuário como está) ...
             $username = trim($_POST['username'] ?? '');
             $password = $_POST['password'] ?? '';
             $role = trim($_POST['role'] ?? '');
+            // full_name é opcional, então pode ser uma string vazia, que será convertida para NULL se a coluna do DB permitir.
+            $full_name = isset($_POST['full_name']) ? trim($_POST['full_name']) : null;
 
+            // Campos obrigatórios são username, password, role
             if (empty($username) || empty($password) || empty($role)) {
-                header('Location: manage_users.php?error=emptyfields_adduser');
+                $_SESSION['temp_form_data'] = $_POST;
+                header('Location: manage_users.php?error=emptyfields_adduser'); // Usar chave de erro existente
                 exit();
             }
-            if (strlen($username) < 3 || strlen($username) > 255) {
-                header('Location: manage_users.php?error=username_length_adduser');
+
+            if (strlen($username) < 3) {
+                $_SESSION['temp_form_data'] = $_POST;
+                header('Location: manage_users.php?error=usernametooshort_adduser');
+                exit();
+            }
+            if (strlen($username) > 255) {
+                $_SESSION['temp_form_data'] = $_POST;
+                header('Location: manage_users.php?error=usernametoolong_adduser');
+                exit();
+            }
+            // Validar full_name somente se fornecido e não for apenas espaços em branco
+            if ($full_name !== null && strlen($full_name) > 255) {
+                $_SESSION['temp_form_data'] = $_POST;
+                header('Location: manage_users.php?error=fullname_toolong'); // Nova chave de erro para manage_users.php
                 exit();
             }
             if (strlen($password) < 6) {
-                header('Location: manage_users.php?error=passwordshort_adduser');
+                $_SESSION['temp_form_data'] = $_POST;
+                header('Location: manage_users.php?error=passwordshort'); // Usar chave de erro existente
                 exit();
             }
-            if (!in_array($role, ['common', 'admin', 'superAdmin'])) {
-                header('Location: manage_users.php?error=invalidrole_adduser');
+            if (!in_array($role, ['common', 'admin', 'admin-aprovador', 'superAdmin'])) {
+                header('Location: manage_users.php?error=invalidrole'); // Usar chave de erro existente
                 exit();
             }
 
@@ -46,16 +64,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-            $sql_insert = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
+            $sql_insert = "INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)"; // Adicionado full_name
             $stmt_insert = $conn->prepare($sql_insert);
             if ($stmt_insert === false) {
                 error_log("SQL Prepare Error (register_user): " . $conn->error);
+                $_SESSION['temp_form_data'] = $_POST;
                 header('Location: manage_users.php?error=sqlerror_adduser');
                 exit();
             }
-            $stmt_insert->bind_param("sss", $username, $hashed_password, $role);
+            $stmt_insert->bind_param("ssss", $username, $hashed_password, $full_name, $role); // Adicionado 's' para full_name
 
             if ($stmt_insert->execute()) {
+                unset($_SESSION['temp_form_data']); // Limpar dados do formulário em caso de sucesso
                 header('Location: manage_users.php?success=useradded');
             } else {
                 error_log("SQL Execute Error (register_user): " . $stmt_insert->error);
@@ -65,25 +85,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             exit();
 
         case 'edit_user':
-            // ... (c�digo de editar usu�rio como est�) ...
+            // ... (código de editar usuário como está) ...
             $user_id_to_edit = filter_input(INPUT_POST, 'user_id', FILTER_VALIDATE_INT);
             $new_username = trim($_POST['username'] ?? '');
+            $new_full_name = trim($_POST['full_name'] ?? ''); // Novo campo
             $new_role = trim($_POST['role'] ?? '');
+            // $is_donation_approver = isset($_POST['is_donation_approver']) ? 1 : 0; // Removido
 
             if (!$user_id_to_edit) {
                 header('Location: manage_users.php?error=invaliduserid_edit');
                 exit();
             }
-            // ... (resto das valida��es do edit_user) ...
-             if (empty($new_username) || empty($new_role)) {
-                header('Location: edit_user_page.php?id=' . $user_id_to_edit . '&error=emptyfields_edituser');
+
+            // Adicionar new_full_name à verificação de campos vazios
+            // Nota: O formulário de edição tem 'username' e 'full_name' como required. 'role' também.
+            if (empty($new_username) || empty($new_full_name) || empty($new_role)) {
+                $_SESSION['page_error_message'] = 'Todos os campos (Usuário, Nome Completo, Função) são obrigatórios.';
+                header('Location: edit_user_page.php?id=' . $user_id_to_edit . '&error=emptyfields_edituser_fullname');
                 exit();
             }
             if (strlen($new_username) < 3 || strlen($new_username) > 255) {
+                $_SESSION['page_error_message'] = 'Nome de usuário (login) deve ter entre 3 e 255 caracteres.';
                 header('Location: edit_user_page.php?id=' . $user_id_to_edit . '&error=username_length_edituser');
                 exit();
             }
-            if (!in_array($new_role, ['common', 'admin', 'superAdmin'])) {
+            if (strlen($new_full_name) > 255) {
+                $_SESSION['page_error_message'] = 'Nome completo não pode exceder 255 caracteres.';
+                header('Location: edit_user_page.php?id=' . $user_id_to_edit . '&error=fullname_too_long_edituser');
+                exit();
+            }
+            if (!in_array($new_role, ['common', 'admin', 'admin-aprovador', 'superAdmin'])) { // Adicionado admin-aprovador
+                $_SESSION['page_error_message'] = 'Função inválida selecionada.';
                 header('Location: edit_user_page.php?id=' . $user_id_to_edit . '&error=invalidrole_edit');
                 exit();
             }
@@ -131,17 +163,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 $stmt_check_new->close();
             }
 
-            $sql_update = "UPDATE users SET username = ?, role = ? WHERE id = ?";
+            // Atualizar SQL para incluir full_name e remover is_donation_approver
+            $sql_update = "UPDATE users SET username = ?, full_name = ?, role = ? WHERE id = ?";
             $stmt_update = $conn->prepare($sql_update);
             if ($stmt_update === false) {
                 error_log("SQL Prepare Error (edit_user): " . $conn->error);
+                $_SESSION['page_error_message'] = 'Erro de banco de dados ao preparar atualização do usuário.';
                 header('Location: edit_user_page.php?id=' . $user_id_to_edit . '&error=sqlerror_edituser');
                 exit();
             }
-            $stmt_update->bind_param("ssi", $new_username, $new_role, $user_id_to_edit);
+            // Bind parameters: username, full_name, role, user_id (s, s, s, i)
+            $stmt_update->bind_param("sssi", $new_username, $new_full_name, $new_role, $user_id_to_edit);
 
             if ($stmt_update->execute()) {
-                $_SESSION['admin_page_success_message'] = 'Usu�rio atualizado com sucesso!';
+                // $_SESSION['admin_page_success_message'] = 'Usuário atualizado com sucesso!'; // manage_users.php já lida com ?success=
                 header('Location: manage_users.php?success=userupdated&edited_id=' . $user_id_to_edit);
             } else {
                 error_log("SQL Execute Error (edit_user): " . $stmt_update->error);
@@ -198,7 +233,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 
             if ($stmt_delete->execute()) {
                 if ($stmt_delete->affected_rows > 0) {
-                     $_SESSION['admin_page_success_message'] = 'Usu�rio exclu�do com sucesso!';
+                     $_SESSION['admin_page_success_message'] = 'Usuário excluído com sucesso!';
                     header('Location: manage_users.php?success=userdeleted');
                 } else {
                     header('Location: manage_users.php?error=usernotfoundordeletefailed');
@@ -206,7 +241,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             } else {
                 error_log("SQL Execute Error (delete_user): " . $stmt_delete->error . " - User ID: " . $user_id_to_delete);
                 if ($conn->errno == 1451) {
-                     $_SESSION['admin_page_error_message'] = 'Este usu�rio n�o pode ser exclu�do. Verifique as depend�ncias no banco de dados (possivelmente itens ainda vinculados e a regra ON DELETE SET NULL n�o funcionou corretamente no schema).';
+                     $_SESSION['admin_page_error_message'] = 'Este usuário não pode ser excluído. Verifique as dependências no banco de dados (possivelmente itens ainda vinculados e a regra ON DELETE SET NULL não funcionou corretamente no schema).';
                     header('Location: manage_users.php?error=deletefailed_fkey');
                 } else {
                     header('Location: manage_users.php?error=deleteuserfailed');
@@ -216,7 +251,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             exit();
 
         case 'reset_password':
-            // ... (c�digo de resetar senha como est�) ...
+            // ... (código de resetar senha como está) ...
             $user_id_reset = filter_input(INPUT_POST, 'user_id', FILTER_VALIDATE_INT);
             $new_password = $_POST['new_password'] ?? '';
 
@@ -224,7 +259,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
                 header('Location: manage_users.php?error=invaliduserid_reset');
                 exit();
             }
-            // ... (resto das valida��es do reset_password) ...
+            // ... (resto das validações do reset_password) ...
             if (empty($new_password)) {
                 header('Location: manage_users.php?error=emptypassword_reset&uid_reset=' . $user_id_reset);
                 exit();
@@ -246,10 +281,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 
             if ($stmt_reset_pass->execute()) {
                 if ($stmt_reset_pass->affected_rows > 0) {
-                    $_SESSION['admin_page_success_message'] = 'Senha do usu�rio redefinida com sucesso!';
+                    $_SESSION['admin_page_success_message'] = 'Senha do usuário redefinida com sucesso!';
                     header('Location: manage_users.php?success=passwordreset');
                 } else {
-                     $_SESSION['admin_page_error_message'] = 'Nenhuma altera��o na senha ou usu�rio n�o encontrado.';
+                     $_SESSION['admin_page_error_message'] = 'Nenhuma alteração na senha ou usuário não encontrado.';
                     header('Location: manage_users.php?error=resetnopchangeoruser&uid_reset=' . $user_id_reset);
                 }
             } else {

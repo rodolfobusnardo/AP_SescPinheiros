@@ -1,4 +1,5 @@
 <?php
+mb_internal_encoding('UTF-8'); // Set internal encoding for mb_string functions
 header('Content-Type: application/json'); // Default content type for get_location responses
 require_once '../auth.php';
 require_once '../db_connect.php';
@@ -18,11 +19,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             header('Location: manage_locations.php?error=emptyfields_addloc');
             exit();
         }
-        if (strlen($name) > 255) {
+        if (mb_strlen($name) > 255) {
             header('Location: manage_locations.php?error=locname_too_long');
             exit();
         }
-        if (strlen($name) < 3) {
+        if (mb_strlen($name) < 3) {
             header('Location: manage_locations.php?error=locname_too_short');
             exit();
         }
@@ -59,11 +60,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
             header('Location: manage_locations.php?error=emptyfields_editloc&id=' . $id);
             exit();
         }
-        if (strlen($name) > 255) {
+        if (mb_strlen($name) > 255) {
             header('Location: manage_locations.php?error=locname_too_long_edit&id=' . $id);
             exit();
         }
-        if (strlen($name) < 3) {
+        if (mb_strlen($name) < 3) {
             header('Location: manage_locations.php?error=locname_too_short_edit&id=' . $id);
             exit();
         }
