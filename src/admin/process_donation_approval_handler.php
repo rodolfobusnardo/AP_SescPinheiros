@@ -151,14 +151,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         } catch (mysqli_sql_exception $db_exception) {
             $conn->rollback();
-            error_log("Database error during term processing for term_id " . $term_id . " by " . $admin_identifier . ": " . $db_exception->getMessage());
-            $_SESSION['error_message'] = "Erro no banco de dados ao processar termo de doação. Consulte o log para detalhes.";
-            header("Location: ../manage_donations.php"); // Idealmente voltar para a página do termo específico com erro
+            $error_detail_for_log = "Database error during term processing for term_id " . $term_id . " by " . $admin_identifier . ": " . $db_exception->getMessage();
+            error_log($error_detail_for_log);
+            // Para depuração, adiciona a mensagem da exceção à mensagem da sessão.
+            // REMOVER ou alterar para uma mensagem genérica em PRODUÇÃO.
+            $_SESSION['error_message'] = "Erro no banco de dados ao processar termo de doação. Detalhe: " . htmlspecialchars($db_exception->getMessage());
+            header("Location: ../manage_donations.php?error_term_id=" . $term_id);
             exit();
         } catch (Exception $e) {
             $conn->rollback();
-            error_log("General error during term processing for term_id " . $term_id . " by " . $admin_identifier . ": " . $e->getMessage());
-            $_SESSION['error_message'] = "Erro ao processar termo de doação: " . $e->getMessage();
+            $error_detail_for_log = "General error during term processing for term_id " . $term_id . " by " . $admin_identifier . ": " . $e->getMessage();
+            error_log($error_detail_for_log);
+            // Para depuração, adiciona a mensagem da exceção à mensagem da sessão.
+            // REMOVER ou alterar para uma mensagem genérica em PRODUÇÃO.
+            $_SESSION['error_message'] = "Erro ao processar termo de doação: " . htmlspecialchars($e->getMessage());
             header("Location: ../manage_donations.php");
             exit();
         } finally {
