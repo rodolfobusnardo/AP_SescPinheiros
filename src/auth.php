@@ -4,6 +4,11 @@ function start_secure_session() {
     if (session_status() == PHP_SESSION_NONE) {
         session_start();
     }
+    // Atualiza um timestamp na sessão para ajudar a mantê-la ativa
+    // em relação ao session.gc_maxlifetime.
+    // Isso é útil se o gc estiver limpando sessões que ainda estão em uso
+    // porque o timestamp de acesso do arquivo de sessão não está sendo atualizado.
+    $_SESSION['last_access'] = time();
 }
 
 function is_logged_in() {

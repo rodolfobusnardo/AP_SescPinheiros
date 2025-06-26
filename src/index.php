@@ -1,7 +1,7 @@
 <?php
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
+// Inclui e inicia a sessão segura ANTES de qualquer outra lógica ou saída.
+require_once __DIR__ . '/auth.php';
+start_secure_session();
 
 // If user is already logged in, redirect to home.php
 if (isset($_SESSION['user_id'])) {
