@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt_get_items->bind_param("i", $term_id);
                 $stmt_get_items->execute();
                 $result_items = $stmt_get_items->get_result();
-
+                
                 $item_ids_to_revert = [];
                 while ($row = $result_items->fetch_assoc()) {
                     $item_ids_to_revert[] = $row['item_id'];
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $placeholders = implode(',', array_fill(0, count($item_ids_to_revert), '?'));
                     // Itens associados a um termo 'Aguardando Aprovação' também estão com status 'Aguardando Aprovação'
                     $sql_update_items = "UPDATE items SET status = 'Pendente' WHERE id IN ($placeholders) AND status = 'Aguardando Aprovação'";
-
+                    
                     $stmt_update_items = $conn->prepare($sql_update_items);
                     if (!$stmt_update_items) throw new Exception("Erro ao preparar reversão de status dos itens: " . $conn->error . " por " . $admin_identifier);
 
@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     "UPDATE donation_terms SET status = 'Doado', approved_at = NOW(), approved_by_user_id = ? WHERE term_id = ? AND status = 'Aguardando Aprovação'"
                 );
                 if (!$stmt_term) throw new Exception("Erro ao preparar atualização do termo para aprovação: " . $conn->error . " por " . $admin_identifier);
-
+                
                 $stmt_term->bind_param("ii", $admin_user_id, $term_id);
                 $stmt_term->execute();
 
@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt_get_items->bind_param("i", $term_id);
                 $stmt_get_items->execute();
                 $result_items = $stmt_get_items->get_result();
-
+                
                 $item_ids_to_update = [];
                 while ($row = $result_items->fetch_assoc()) {
                     $item_ids_to_update[] = $row['item_id'];
@@ -132,14 +132,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $placeholders = implode(',', array_fill(0, count($item_ids_to_update), '?'));
                     // Itens associados a um termo 'Aguardando Aprovação' também estão com status 'Aguardando Aprovação'
                     $sql_update_items = "UPDATE items SET status = 'Doado' WHERE id IN ($placeholders) AND status = 'Aguardando Aprovação'";
-
+                    
                     $stmt_update_items = $conn->prepare($sql_update_items);
                     if (!$stmt_update_items) throw new Exception("Erro ao preparar atualização dos itens para doado: " . $conn->error . " por " . $admin_identifier);
 
                     $types = str_repeat('i', count($item_ids_to_update));
                     $stmt_update_items->bind_param($types, ...$item_ids_to_update);
                     $stmt_update_items->execute();
-
+                    
                     $stmt_update_items->close();
                 }
 
@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Para depuração, adiciona a mensagem da exceção à mensagem da sessão.
             // REMOVER ou alterar para uma mensagem genérica em PRODUÇÃO.
             $_SESSION['error_message'] = "Erro no banco de dados ao processar termo de doação. Detalhe: " . htmlspecialchars($db_exception->getMessage());
-            header("Location: ../manage_donations.php?error_term_id=" . $term_id);
+            header("Location: ../manage_donations.php?error_term_id=" . $term_id); 
             exit();
         } catch (Exception $e) {
             $conn->rollback();
