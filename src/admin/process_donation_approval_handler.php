@@ -40,66 +40,131 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->begin_transaction();
 
         try {
-            // 1. Update the donation_terms status to 'Doado' (or another approved status)
-            // Also set approved_at and approved_by_user_id
-            $stmt_term = $conn->prepare(
-                "UPDATE donation_terms SET status = 'Doado', approved_at = NOW(), approved_by_user_id = ? WHERE term_id = ? AND status = 'Aguardando Aprovação'"
-            );
-            if (!$stmt_term) throw new Exception("Erro ao preparar atualização do termo: " . $conn->error . " por " . $admin_identifier);
-            
-            $stmt_term->bind_param("ii", $admin_user_id, $term_id);
-            $stmt_term->execute();
+            $action = $_POST['action'] ?? 'approve'; // Default to 'approve' if no action is specified
 
-            if ($stmt_term->affected_rows === 0) {
-                throw new Exception("Nenhum termo de doação foi atualizado. Verifique se o ID do termo (" . $term_id . ") é válido e se o status era 'Aguardando Aprovação'. Ação por " . $admin_identifier);
-            }
-            $stmt_term->close();
+            if ($action === 'decline') {
+                // Logic for declining a donation term
+                $reproval_reason = trim($_POST['reproval_reason'] ?? '');
+                if (empty($reproval_reason)) {
+                    throw new Exception("O motivo da reprovação é obrigatório. Ação por " . $admin_identifier);
+                }
 
-            // 2. Get all item_ids associated with this term_id from donation_term_items
-            $stmt_get_items = $conn->prepare("SELECT item_id FROM donation_term_items WHERE term_id = ?");
-            if (!$stmt_get_items) throw new Exception("Erro ao preparar busca de itens do termo: " . $conn->error . " por " . $admin_identifier);
-
-            $stmt_get_items->bind_param("i", $term_id);
-            $stmt_get_items->execute();
-            $result_items = $stmt_get_items->get_result();
-            
-            $item_ids_to_update = [];
-            while ($row = $result_items->fetch_assoc()) {
-                $item_ids_to_update[] = $row['item_id'];
-            }
-            $stmt_get_items->close();
-
-            // 3. Update the status of related items to 'Doado' in the 'items' table
-            if (!empty($item_ids_to_update)) {
-                $placeholders = implode(',', array_fill(0, count($item_ids_to_update), '?'));
-                $sql_update_items = "UPDATE items SET status = 'Doado' WHERE id IN ($placeholders) AND status = 'Aguardando Aprovação'";
+                // Update donation_terms table
+                $stmt_term = $conn->prepare(
+                    "UPDATE donation_terms SET status = 'Reprovado', reproval_reason = ?, reproved_at = NOW(), reproved_by_user_id = ? WHERE term_id = ? AND status = 'Aguardando Aprovação'"
+                );
+                if (!$stmt_term) throw new Exception("Erro ao preparar atualização do termo para reprovação: " . $conn->error . " por " . $admin_identifier);
                 
-                $stmt_update_items = $conn->prepare($sql_update_items);
-                if (!$stmt_update_items) throw new Exception("Erro ao preparar atualização dos itens: " . $conn->error . " por " . $admin_identifier);
+                $stmt_term->bind_param("sii", $reproval_reason, $admin_user_id, $term_id);
+                $stmt_term->execute();
 
-                $types = str_repeat('i', count($item_ids_to_update));
-                $stmt_update_items->bind_param($types, ...$item_ids_to_update);
-                $stmt_update_items->execute();
+                if ($stmt_term->affected_rows === 0) {
+                    throw new Exception("Nenhum termo de doação foi atualizado para reprovação. Verifique se o ID (" . $term_id . ") é válido e o status era 'Aguardando Aprovação'. Ação por " . $admin_identifier);
+                }
+                $stmt_term->close();
+
+                // Get all item_ids associated with this term_id from donation_term_items
+                $stmt_get_items = $conn->prepare("SELECT item_id FROM donation_term_items WHERE term_id = ?");
+                if (!$stmt_get_items) throw new Exception("Erro ao preparar busca de itens do termo para reprovação: " . $conn->error . " por " . $admin_identifier);
                 
-                $stmt_update_items->close();
+                $stmt_get_items->bind_param("i", $term_id);
+                $stmt_get_items->execute();
+                $result_items = $stmt_get_items->get_result();
+                
+                $item_ids_to_revert = [];
+                while ($row = $result_items->fetch_assoc()) {
+                    $item_ids_to_revert[] = $row['item_id'];
+                }
+                $stmt_get_items->close();
+
+                // Update the status of related items back to 'Pendente' in the 'items' table
+                if (!empty($item_ids_to_revert)) {
+                    $placeholders = implode(',', array_fill(0, count($item_ids_to_revert), '?'));
+                    // Itens associados a um termo 'Aguardando Aprovação' também estão com status 'Aguardando Aprovação'
+                    $sql_update_items = "UPDATE items SET status = 'Pendente' WHERE id IN ($placeholders) AND status = 'Aguardando Aprovação'";
+                    
+                    $stmt_update_items = $conn->prepare($sql_update_items);
+                    if (!$stmt_update_items) throw new Exception("Erro ao preparar reversão de status dos itens: " . $conn->error . " por " . $admin_identifier);
+
+                    $types = str_repeat('i', count($item_ids_to_revert));
+                    $stmt_update_items->bind_param($types, ...$item_ids_to_revert);
+                    $stmt_update_items->execute();
+                    $stmt_update_items->close();
+                }
+
+                $conn->commit();
+                $_SESSION['success_message'] = "Termo de Doação ID: " . htmlspecialchars($term_id) . " reprovado com sucesso. Itens relacionados revertidos para 'Pendente'.";
+                header("Location: ../manage_donations.php?context=approval_processed&term_id=" . $term_id); // Adicionado term_id para possível destaque
+                exit();
+
+            } else { // Default action: 'approve'
+                // 1. Update the donation_terms status to 'Doado'
+                // Also set approved_at and approved_by_user_id
+                $stmt_term = $conn->prepare(
+                    "UPDATE donation_terms SET status = 'Doado', approved_at = NOW(), approved_by_user_id = ? WHERE term_id = ? AND status = 'Aguardando Aprovação'"
+                );
+                if (!$stmt_term) throw new Exception("Erro ao preparar atualização do termo para aprovação: " . $conn->error . " por " . $admin_identifier);
+                
+                $stmt_term->bind_param("ii", $admin_user_id, $term_id);
+                $stmt_term->execute();
+
+                if ($stmt_term->affected_rows === 0) {
+                    throw new Exception("Nenhum termo de doação foi atualizado para aprovação. Verifique se o ID (" . $term_id . ") é válido e o status era 'Aguardando Aprovação'. Ação por " . $admin_identifier);
+                }
+                $stmt_term->close();
+
+                // 2. Get all item_ids associated with this term_id from donation_term_items
+                $stmt_get_items = $conn->prepare("SELECT item_id FROM donation_term_items WHERE term_id = ?");
+                if (!$stmt_get_items) throw new Exception("Erro ao preparar busca de itens do termo para aprovação: " . $conn->error . " por " . $admin_identifier);
+
+                $stmt_get_items->bind_param("i", $term_id);
+                $stmt_get_items->execute();
+                $result_items = $stmt_get_items->get_result();
+                
+                $item_ids_to_update = [];
+                while ($row = $result_items->fetch_assoc()) {
+                    $item_ids_to_update[] = $row['item_id'];
+                }
+                $stmt_get_items->close();
+
+                // 3. Update the status of related items to 'Doado' in the 'items' table
+                if (!empty($item_ids_to_update)) {
+                    $placeholders = implode(',', array_fill(0, count($item_ids_to_update), '?'));
+                    // Itens associados a um termo 'Aguardando Aprovação' também estão com status 'Aguardando Aprovação'
+                    $sql_update_items = "UPDATE items SET status = 'Doado' WHERE id IN ($placeholders) AND status = 'Aguardando Aprovação'";
+                    
+                    $stmt_update_items = $conn->prepare($sql_update_items);
+                    if (!$stmt_update_items) throw new Exception("Erro ao preparar atualização dos itens para doado: " . $conn->error . " por " . $admin_identifier);
+
+                    $types = str_repeat('i', count($item_ids_to_update));
+                    $stmt_update_items->bind_param($types, ...$item_ids_to_update);
+                    $stmt_update_items->execute();
+                    
+                    $stmt_update_items->close();
+                }
+
+                $conn->commit();
+                $_SESSION['success_message'] = "Termo de Doação ID: " . htmlspecialchars($term_id) . " aprovado com sucesso. Itens relacionados marcados como 'Doado'.";
+                header("Location: ../manage_donations.php?context=approval_processed&term_id=" . $term_id); // Adicionado term_id para possível destaque
+                exit();
             }
-
-            $conn->commit();
-
-            $_SESSION['success_message'] = "Termo de Doação ID: " . htmlspecialchars($term_id) . " aprovado com sucesso. Itens relacionados marcados como 'Doado'.";
-            header("Location: ../manage_donations.php");
-            exit();
 
         } catch (mysqli_sql_exception $db_exception) {
             $conn->rollback();
-            error_log("Database error during term approval for term_id " . $term_id . " by " . $admin_identifier . ": " . $db_exception->getMessage());
-            $_SESSION['error_message'] = "Erro no banco de dados ao aprovar termo de doação. Consulte o log para detalhes.";
-            header("Location: ../manage_donations.php");
+            $error_detail_for_log = "Database error during term processing for term_id " . $term_id . " by " . $admin_identifier . ": " . $db_exception->getMessage();
+            error_log($error_detail_for_log);
+            // Para depuração, adiciona a mensagem da exceção à mensagem da sessão.
+            // REMOVER ou alterar para uma mensagem genérica em PRODUÇÃO.
+            $_SESSION['error_message'] = "Erro no banco de dados ao processar termo de doação. Detalhe: " . htmlspecialchars($db_exception->getMessage());
+            header("Location: ../manage_donations.php?error_term_id=" . $term_id); 
             exit();
         } catch (Exception $e) {
             $conn->rollback();
-            error_log("General error during term approval for term_id " . $term_id . " by " . $admin_identifier . ": " . $e->getMessage());
-            $_SESSION['error_message'] = "Erro ao aprovar termo de doação: " . $e->getMessage();
+            $error_detail_for_log = "General error during term processing for term_id " . $term_id . " by " . $admin_identifier . ": " . $e->getMessage();
+            error_log($error_detail_for_log);
+            // Para depuração, adiciona a mensagem da exceção à mensagem da sessão.
+            // REMOVER ou alterar para uma mensagem genérica em PRODUÇÃO.
+            $_SESSION['error_message'] = "Erro ao processar termo de doação: " . htmlspecialchars($e->getMessage());
             header("Location: ../manage_donations.php");
             exit();
         } finally {

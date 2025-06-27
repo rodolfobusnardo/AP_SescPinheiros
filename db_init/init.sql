@@ -48,10 +48,13 @@ CREATE TABLE IF NOT EXISTS `donation_terms` (
     `reproval_reason` TEXT NULL DEFAULT NULL COMMENT 'Reason why the donation term was reproved',
     `approved_at` TIMESTAMP NULL DEFAULT NULL COMMENT 'Data da aprovação do termo',
     `approved_by_user_id` INT NULL DEFAULT NULL COMMENT 'ID do usuário que aprovou o termo',
+    `reproved_at` TIMESTAMP NULL DEFAULT NULL COMMENT 'Data da reprovação do termo',
+    `reproved_by_user_id` INT NULL DEFAULT NULL COMMENT 'ID do usuário que reprovou o termo',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
-    FOREIGN KEY (`approved_by_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+    FOREIGN KEY (`approved_by_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`reproved_by_user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- Categories Table

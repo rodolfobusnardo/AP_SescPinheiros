@@ -229,9 +229,7 @@ require_once 'templates/header.php';
                                 <?php echo $status_text_display_term; ?>
                             </span>
                             <?php if ($term['status'] === 'Reprovado' && !empty(trim($term['reproval_reason']))): ?>
-                                <small style="display:block; margin-top:5px; color: #721c24;" title="<?php echo htmlspecialchars(trim($term['reproval_reason'])); ?>">
-                                    Motivo (passe o mouse)
-                                </small>
+                                
                             <?php endif; ?>
                         </td>
                         <td>
