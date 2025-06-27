@@ -254,31 +254,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateActionButtonsState();
         if(selectAllCheckbox) selectAllCheckbox.checked = false;
 
-        // Adiciona event listener para o novo botão de imprimir código de barras
-        if (imprimirCodBarrasButton) {
-            imprimirCodBarrasButton.addEventListener('click', function() {
-                const selectedIds = Array.from(document.querySelectorAll('#itemListContainer .item-checkbox:checked'))
-                                        .map(cb => cb.value)
-                                        .filter(id => {
-                                            // Adicionalmente, verificar se o item possui código de barras antes de incluir
-                                            const itemRow = document.querySelector(`#itemListContainer input.item-checkbox[value="${id}"]`).closest('tr');
-                                            if (itemRow) {
-                                                // A célula do código de barras é a 5ª (índice 4), e o SVG é a 6ª (índice 5)
-                                                // Vamos checar o texto do código de barras diretamente.
-                                                const barcodeTextCell = itemRow.cells[4];
-                                                return barcodeTextCell && barcodeTextCell.textContent.trim() !== 'N/A';
-                                            }
-                                            return false;
-                                        });
-
-                if (selectedIds.length > 0) {
-                    window.location.href = 'print_barcodes_page.php?ids=' + selectedIds.join(',');
-                } else {
-                    alert('Por favor, selecione ao menos um item com código de barras para imprimir.');
-                }
-            });
-        }
-
         // Gera os barcodes para os itens carregados via AJAX
         itemsData.forEach(item => {
             if (item.barcode) {
@@ -398,6 +373,28 @@ document.addEventListener('DOMContentLoaded', function() {
         itemNameInput.addEventListener('input', debounce(function() {
             fetchItemsAndUpdateList(false);
         }, 350));
+    }
+
+    // Adiciona event listener para o novo botão de imprimir código de barras (MOVIDO PARA CÁ)
+    if (imprimirCodBarrasButton) {
+        imprimirCodBarrasButton.addEventListener('click', function() {
+            const selectedIds = Array.from(document.querySelectorAll('#itemListContainer .item-checkbox:checked'))
+                                    .map(cb => cb.value)
+                                    .filter(id => {
+                                        const itemRow = document.querySelector(`#itemListContainer input.item-checkbox[value="${id}"]`).closest('tr');
+                                        if (itemRow) {
+                                            const barcodeTextCell = itemRow.cells[4];
+                                            return barcodeTextCell && barcodeTextCell.textContent.trim() !== 'N/A';
+                                        }
+                                        return false;
+                                    });
+
+            if (selectedIds.length > 0) {
+                window.location.href = 'print_barcodes_page.php?ids=' + selectedIds.join(',');
+            } else {
+                alert('Por favor, selecione ao menos um item com código de barras para imprimir.');
+            }
+        });
     }
 
     updateActionButtonsState();
