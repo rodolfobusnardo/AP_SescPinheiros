@@ -155,6 +155,7 @@ value="<?php echo htmlspecialchars($_GET['filter_found_date_start'] ?? ''); ?>">
        
         <button id="devolverButton" class="button-secondary" disabled>Devolver Selecionados</button>
         <button id="doarButton" class="button-secondary" disabled>Doar Selecionados</button>
+        <button id="imprimirCodBarrasButton" class="button-secondary" disabled>Imprimir Cód. Barras</button>
     </div>
     <?php endif;
 ?>

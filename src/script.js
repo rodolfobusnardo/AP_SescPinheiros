@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
     const devolverButton = document.getElementById('devolverButton');
     const doarButton = document.getElementById('doarButton');
+    const imprimirCodBarrasButton = document.getElementById('imprimirCodBarrasButton'); // Novo botão
     const itemNameInput = document.getElementById('filter_item_name');
 
     if (filterForm) {
@@ -253,6 +254,31 @@ document.addEventListener('DOMContentLoaded', function() {
         updateActionButtonsState();
         if(selectAllCheckbox) selectAllCheckbox.checked = false;
 
+        // Adiciona event listener para o novo botão de imprimir código de barras
+        if (imprimirCodBarrasButton) {
+            imprimirCodBarrasButton.addEventListener('click', function() {
+                const selectedIds = Array.from(document.querySelectorAll('#itemListContainer .item-checkbox:checked'))
+                                        .map(cb => cb.value)
+                                        .filter(id => {
+                                            // Adicionalmente, verificar se o item possui código de barras antes de incluir
+                                            const itemRow = document.querySelector(`#itemListContainer input.item-checkbox[value="${id}"]`).closest('tr');
+                                            if (itemRow) {
+                                                // A célula do código de barras é a 5ª (índice 4), e o SVG é a 6ª (índice 5)
+                                                // Vamos checar o texto do código de barras diretamente.
+                                                const barcodeTextCell = itemRow.cells[4];
+                                                return barcodeTextCell && barcodeTextCell.textContent.trim() !== 'N/A';
+                                            }
+                                            return false;
+                                        });
+
+                if (selectedIds.length > 0) {
+                    window.location.href = 'print_barcodes_page.php?ids=' + selectedIds.join(',');
+                } else {
+                    alert('Por favor, selecione ao menos um item com código de barras para imprimir.');
+                }
+            });
+        }
+
         // Gera os barcodes para os itens carregados via AJAX
         itemsData.forEach(item => {
             if (item.barcode) {
@@ -277,11 +303,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateActionButtonsState() {
-        if (!devolverButton || !doarButton) return;
+        if (!devolverButton || !doarButton || !imprimirCodBarrasButton) return; // Inclui o novo botão
         const selectedCheckboxes = document.querySelectorAll('#itemListContainer .item-checkbox:checked');
         const anySelected = selectedCheckboxes.length > 0;
+
         devolverButton.disabled = !anySelected;
         doarButton.disabled = !anySelected;
+
+        // Habilita o botão de imprimir apenas se algum item selecionado tiver código de barras
+        let anySelectedWithBarcode = false;
+        if (anySelected) {
+            selectedCheckboxes.forEach(checkbox => {
+                const itemRow = checkbox.closest('tr');
+                if (itemRow) {
+                    const barcodeTextCell = itemRow.cells[4]; // Célula do texto do Cód. Barras
+                    if (barcodeTextCell && barcodeTextCell.textContent.trim() !== 'N/A') {
+                        anySelectedWithBarcode = true;
+                    }
+                }
+            });
+        }
+        imprimirCodBarrasButton.disabled = !anySelectedWithBarcode;
     }
 
     function handleItemCheckboxChange() {
